@@ -506,6 +506,14 @@
         <button class="scale-btn" data-scale="3" onclick="setScale(3)">3×</button>
       </div>
     </div>
+    <div class="color-field">
+      <label>ALIGN</label>
+      <div id="align-btns" style="display:flex;gap:4px;">
+        <button class="scale-btn active" data-align="left"   onclick="setAlign('left')">L</button>
+        <button class="scale-btn"        data-align="center" onclick="setAlign('center')">C</button>
+        <button class="scale-btn"        data-align="right"  onclick="setAlign('right')">R</button>
+      </div>
+    </div>
   </div>
 
   <div class="export-options">
@@ -2081,7 +2089,7 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
         const rendered = await Promise.all(
           inputLines.map(line => line.trim() ? figletAsync(line, font) : Promise.resolve(''))
         );
-        currentArt = rendered.join('\n');
+        currentArt = alignArt(rendered.join('\n'), currentAlign);
         output.textContent = currentArt;
         const artLines = currentArt.split('\n');
         const lineCount = artLines.length;
@@ -2196,6 +2204,28 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
     function toggleTheme() {
       const light = document.body.classList.toggle('light');
       document.getElementById('theme-toggle').textContent = light ? 'DARK' : 'LIGHT';
+    }
+
+    let currentAlign = 'left';
+
+    function alignArt(art, align) {
+      if (align === 'left') return art;
+      const lines = art.split('\n');
+      const max = Math.max(...lines.map(l => l.length));
+      return lines.map(l => {
+        const pad = max - l.length;
+        if (align === 'center') return ' '.repeat(Math.floor(pad / 2)) + l;
+        if (align === 'right')  return ' '.repeat(pad) + l;
+        return l;
+      }).join('\n');
+    }
+
+    function setAlign(align) {
+      currentAlign = align;
+      document.querySelectorAll('#align-btns .scale-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.align === align)
+      );
+      generate();
     }
 
     let pngScale = 1;
