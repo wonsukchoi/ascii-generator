@@ -376,6 +376,33 @@
     .dropdown-list::-webkit-scrollbar-track { background: #111; }
     .dropdown-list::-webkit-scrollbar-thumb { background: #c9a96e44; }
 
+    #shortcuts {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      opacity: 0.35;
+    }
+
+    #shortcuts span {
+      font-size: 0.72rem;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    kbd {
+      font-family: 'Courier New', monospace;
+      font-size: 0.68rem;
+      border: 1px solid currentColor;
+      padding: 1px 4px;
+      border-radius: 2px;
+      line-height: 1.4;
+    }
+
+    body.light #shortcuts { opacity: 0.4; }
+
     /* Theme toggle button */
     #theme-toggle {
       position: fixed;
@@ -555,6 +582,13 @@
   </div>
 
   <div id="status"></div>
+  <div id="shortcuts">
+    <span><kbd>⌘</kbd><kbd>↵</kbd> generate</span>
+    <span><kbd>⌘</kbd><kbd>⇧</kbd><kbd>C</kbd> copy png</span>
+    <span><kbd>⌘</kbd><kbd>⇧</kbd><kbd>S</kbd> save png</span>
+    <span><kbd>⌘</kbd><kbd>⇧</kbd><kbd>L</kbd> copy link</span>
+    <span><kbd>esc</kbd> close menu</span>
+  </div>
 
   <script>
 /*
@@ -2396,6 +2430,17 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
     }
 
     document.getElementById('text-input').addEventListener('input', debouncedGenerate);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === 'Enter')                          { e.preventDefault(); generate(); }
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); copyPng(); }
+      if (mod && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); savePng(); }
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'l') { e.preventDefault(); copyLink(); }
+      if (e.key === 'Escape')                                { closeDropdown(); }
+    });
+
     document.getElementById('font-select').addEventListener('change', generate);
 
     // Read URL hash on load and pre-populate inputs
