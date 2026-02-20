@@ -594,12 +594,91 @@
     body.focus-mode .controls,
     body.focus-mode .font-size-row,
     body.focus-mode .export-options,
+    body.focus-mode #settings-panel,
     body.focus-mode #history-nav,
     body.focus-mode #status,
     body.focus-mode #shortcuts,
     body.focus-mode h1 { display: none !important; }
     body.focus-mode #focus-btn { opacity: 1; letter-spacing: 1px; right: 20px; }
     body.focus-mode #theme-toggle { right: 86px; }
+
+    /* ── Settings panel ───────────────────────── */
+    #settings-btn.active { border-color: #c9a96eaa; opacity: 1; }
+
+    #settings-panel {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px 32px;
+      width: 100%;
+      max-width: 900px;
+      padding: 20px 24px;
+      border: 1px solid #c9a96e22;
+      background: rgba(0,0,0,0.25);
+      margin-bottom: 20px;
+      box-sizing: border-box;
+    }
+    #settings-panel.open { display: grid; }
+
+    .settings-col {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .sc-label {
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      opacity: 0.35;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #c9a96e18;
+      margin-top: 6px;
+    }
+    .sc-label:first-child { margin-top: 0; }
+
+    .sc-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .sc-key {
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      opacity: 0.5;
+      min-width: 72px;
+      white-space: nowrap;
+    }
+    .sc-val {
+      font-size: 0.8rem;
+      opacity: 0.6;
+      min-width: 28px;
+    }
+    .sc-row input[type="range"] {
+      flex: 1;
+      min-width: 50px;
+      max-width: 110px;
+    }
+
+    .sc-sub {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 4px 0 0 0;
+    }
+    .sc-sub input[type="range"] { flex: 1; min-width: 50px; max-width: 110px; }
+
+    body.light #settings-panel { background: rgba(245,240,232,0.6); border-color: #7a5c1e22; }
+    body.light .sc-label { border-color: #7a5c1e18; }
+    body.light .sc-key { color: #7a5c1e; }
+    body.light #settings-btn.active { border-color: #7a5c1eaa; }
+
+    @media (max-width: 900px) {
+      #settings-panel { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+      #settings-panel { grid-template-columns: 1fr; }
+    }
 
     /* Light mode overrides */
     body.light {

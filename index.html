@@ -101,244 +101,239 @@
         </div>
       </div>
     </div>
+    <button class="btn secondary" id="settings-btn" onclick="toggleSettings()" title="Toggle settings panel">SETTINGS ▾</button>
   </div>
 
-  <div class="font-size-row">
-    <label>FONT SIZE</label>
-    <input type="range" id="font-size-slider" min="6" max="20" value="13" oninput="updateFontSize(this.value)">
-    <span id="font-size-display">13px</span>
-    <label style="margin-left:20px;">ZOOM</label>
-    <input type="range" id="zoom-slider" min="0.5" max="4" value="1" step="0.5" oninput="updateZoom(this.value)">
-    <span id="zoom-display">1×</span>
-    <button class="scale-btn" onclick="autoFitZoom()" title="Auto-fit zoom to viewport width" style="margin-left:4px;">FIT</button>
-    <button class="scale-btn" id="ln-btn" onclick="toggleLineNumbers()" title="Toggle line numbers in preview" style="margin-left:12px;">123</button>
-    <label style="margin-left:20px;">PNG PADDING</label>
-    <input type="range" id="png-padding-slider" min="0" max="120" value="32" oninput="document.getElementById('png-padding-display').textContent = this.value + 'px'">
-    <span id="png-padding-display">32px</span>
-    <label style="margin-left:20px;">BLOCK GAP</label>
-    <input type="range" id="block-gap-slider" min="0" max="4" value="0" oninput="updateBlockGap(this.value)">
-    <span id="block-gap-display">0</span>
-    <label style="margin-left:20px;">LINE HEIGHT</label>
-    <input type="range" id="line-height-slider" min="0.9" max="2.0" value="1.15" step="0.05" oninput="updateLineHeight(this.value)">
-    <span id="line-height-display">1.15</span>
-  </div>
+  <div id="settings-panel">
 
-  <div class="font-size-row">
-    <label>LETTER SPC</label>
-    <div id="lspc-btns" style="display:flex;gap:4px;">
-      <button class="scale-btn active" data-lspc="0" onclick="setLetterSpacing(0)" title="No extra spacing">0</button>
-      <button class="scale-btn" data-lspc="1" onclick="setLetterSpacing(1)" title="1 space between chars">+1</button>
-      <button class="scale-btn" data-lspc="2" onclick="setLetterSpacing(2)" title="2 spaces between chars">+2</button>
-      <button class="scale-btn" data-lspc="3" onclick="setLetterSpacing(3)" title="3 spaces between chars">+3</button>
-    </div>
-    <label style="margin-left:20px;">WRAP WIDTH</label>
-    <input type="range" id="wrap-width-slider" min="0" max="60" value="0" step="5" oninput="updateWrapWidth(this.value)">
-    <span id="wrap-width-display">OFF</span>
-  </div>
+    <!-- Col 1: Display + Text transforms -->
+    <div class="settings-col">
+      <div class="sc-label">DISPLAY</div>
+      <div class="sc-row">
+        <span class="sc-key">FONT SIZE</span>
+        <input type="range" id="font-size-slider" min="6" max="20" value="13" oninput="updateFontSize(this.value)">
+        <span id="font-size-display" class="sc-val">13px</span>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">ZOOM</span>
+        <input type="range" id="zoom-slider" min="0.5" max="4" value="1" step="0.5" oninput="updateZoom(this.value)">
+        <span id="zoom-display" class="sc-val">1&times;</span>
+        <button class="scale-btn" onclick="autoFitZoom()" title="Auto-fit zoom">FIT</button>
+        <button class="scale-btn" id="ln-btn" onclick="toggleLineNumbers()" title="Toggle line numbers">123</button>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">LINE HEIGHT</span>
+        <input type="range" id="line-height-slider" min="0.9" max="2.0" value="1.15" step="0.05" oninput="updateLineHeight(this.value)">
+        <span id="line-height-display" class="sc-val">1.15</span>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">BLOCK GAP</span>
+        <input type="range" id="block-gap-slider" min="0" max="4" value="0" oninput="updateBlockGap(this.value)">
+        <span id="block-gap-display" class="sc-val">0</span>
+      </div>
 
-  <div class="font-size-row">
-    <label>CASE</label>
-    <div style="display:flex;gap:4px;">
-      <button class="scale-btn" onclick="transformCase('upper')" title="Transform input to UPPERCASE">UPPER</button>
-      <button class="scale-btn" onclick="transformCase('lower')" title="Transform input to lowercase">lower</button>
-      <button class="scale-btn" onclick="transformCase('title')" title="Transform input to Title Case">Title</button>
-      <button class="scale-btn" onclick="transformCase('toggle')" title="Toggle each character's case">tOGGLE</button>
-    </div>
-    <label style="margin-left:20px;">SPACE FILL</label>
-    <input type="text" id="fill-char-input" maxlength="1" placeholder="·" title="Replace spaces in ASCII art with this character"
-           oninput="updateFillChar(this.value)"
-           style="width:36px;background:transparent;border:1px solid #c9a96e55;color:#c9a96e;font-family:'Courier New',monospace;font-size:0.9rem;padding:4px 8px;outline:none;text-align:center;">
-  </div>
-
-  <div class="export-options" style="margin-bottom:10px;">
-    <div class="color-field">
-      <label>PNG SCALE</label>
-      <div id="scale-btns" style="display:flex;gap:4px;">
-        <button class="scale-btn active" data-scale="1" onclick="setScale(1)">1×</button>
-        <button class="scale-btn" data-scale="2" onclick="setScale(2)">2×</button>
-        <button class="scale-btn" data-scale="3" onclick="setScale(3)">3×</button>
-        <button class="scale-btn" data-scale="4" onclick="setScale(4)">4×</button>
+      <div class="sc-label">TEXT</div>
+      <div class="sc-row">
+        <span class="sc-key">LETTER SPC</span>
+        <div id="lspc-btns" style="display:flex;gap:4px;">
+          <button class="scale-btn active" data-lspc="0" onclick="setLetterSpacing(0)" title="No extra spacing">0</button>
+          <button class="scale-btn" data-lspc="1" onclick="setLetterSpacing(1)" title="+1 space">+1</button>
+          <button class="scale-btn" data-lspc="2" onclick="setLetterSpacing(2)" title="+2 spaces">+2</button>
+          <button class="scale-btn" data-lspc="3" onclick="setLetterSpacing(3)" title="+3 spaces">+3</button>
+        </div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">WRAP WIDTH</span>
+        <input type="range" id="wrap-width-slider" min="0" max="60" value="0" step="5" oninput="updateWrapWidth(this.value)">
+        <span id="wrap-width-display" class="sc-val">OFF</span>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">CASE</span>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="scale-btn" onclick="transformCase('upper')" title="UPPERCASE">UPPER</button>
+          <button class="scale-btn" onclick="transformCase('lower')" title="lowercase">lower</button>
+          <button class="scale-btn" onclick="transformCase('title')" title="Title Case">Title</button>
+          <button class="scale-btn" onclick="transformCase('toggle')" title="tOGGLE cAsE">tOGGLE</button>
+        </div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">SPACE FILL</span>
+        <input type="text" id="fill-char-input" maxlength="1" placeholder="&middot;" title="Replace spaces with this character"
+               oninput="updateFillChar(this.value)"
+               style="width:36px;background:transparent;border:1px solid #c9a96e55;color:#c9a96e;font-family:'Courier New',monospace;font-size:0.9rem;padding:4px 8px;outline:none;text-align:center;">
       </div>
     </div>
-    <div class="color-field">
-      <label>ALIGN</label>
-      <div id="align-btns" style="display:flex;gap:4px;">
-        <button class="scale-btn active" data-align="left"   onclick="setAlign('left')">L</button>
-        <button class="scale-btn"        data-align="center" onclick="setAlign('center')">C</button>
-        <button class="scale-btn"        data-align="right"  onclick="setAlign('right')">R</button>
+
+    <!-- Col 2: Art Style + PNG -->
+    <div class="settings-col">
+      <div class="sc-label">ART STYLE</div>
+      <div class="sc-row">
+        <span class="sc-key">ALIGN</span>
+        <div id="align-btns" style="display:flex;gap:4px;">
+          <button class="scale-btn active" data-align="left"   onclick="setAlign('left')">L</button>
+          <button class="scale-btn"        data-align="center" onclick="setAlign('center')">C</button>
+          <button class="scale-btn"        data-align="right"  onclick="setAlign('right')">R</button>
+        </div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">WIDTH</span>
+        <div id="width-btns" style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="scale-btn"        data-layout="full"               title="Full"    onclick="setLayout('full')">FULL</button>
+          <button class="scale-btn active" data-layout="default"            title="Default" onclick="setLayout('default')">DEF</button>
+          <button class="scale-btn"        data-layout="fitted"             title="Fitted"  onclick="setLayout('fitted')">FIT</button>
+          <button class="scale-btn"        data-layout="universal smushing" title="Smush"   onclick="setLayout('universal smushing')">SMUSH</button>
+        </div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">BORDER</span>
+        <div id="border-btns" style="display:flex;gap:4px;">
+          <button class="scale-btn active" data-border="none"   onclick="setBorder('none')"   title="No border">NONE</button>
+          <button class="scale-btn"        data-border="simple" onclick="setBorder('simple')" title="Box">BOX</button>
+          <button class="scale-btn"        data-border="double" onclick="setBorder('double')" title="Double">DBL</button>
+          <button class="scale-btn"        data-border="hash"   onclick="setBorder('hash')"   title="Hash">#</button>
+        </div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">FLIP</span>
+        <div id="flip-btns" style="display:flex;gap:4px;">
+          <button class="scale-btn active" data-flip=""   onclick="setFlipMode('')">NONE</button>
+          <button class="scale-btn"        data-flip="h"  onclick="setFlipMode('h')">&#x21D4; H</button>
+          <button class="scale-btn"        data-flip="v"  onclick="setFlipMode('v')">&#x21D5; V</button>
+          <button class="scale-btn"        data-flip="hv" onclick="setFlipMode('hv')">&#x2921; HV</button>
+        </div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">ECHO</span>
+        <div id="echo-btns" style="display:flex;gap:4px;">
+          <button class="scale-btn active" data-echo="none" onclick="setEchoMode('none')">NONE</button>
+          <button class="scale-btn"        data-echo="h"    onclick="setEchoMode('h')">&#x21D4;</button>
+          <button class="scale-btn"        data-echo="v"    onclick="setEchoMode('v')">&#x21D5;</button>
+          <button class="scale-btn"        data-echo="hv"   onclick="setEchoMode('hv')">&#x229E;</button>
+        </div>
+      </div>
+
+      <div class="sc-label">PNG</div>
+      <div class="sc-row">
+        <span class="sc-key">SCALE</span>
+        <div id="scale-btns" style="display:flex;gap:4px;">
+          <button class="scale-btn active" data-scale="1" onclick="setScale(1)">1&times;</button>
+          <button class="scale-btn"        data-scale="2" onclick="setScale(2)">2&times;</button>
+          <button class="scale-btn"        data-scale="3" onclick="setScale(3)">3&times;</button>
+          <button class="scale-btn"        data-scale="4" onclick="setScale(4)">4&times;</button>
+        </div>
+      </div>
+      <div class="sc-row">
+        <span class="sc-key">PADDING</span>
+        <input type="range" id="png-padding-slider" min="0" max="120" value="32" oninput="document.getElementById('png-padding-display').textContent = this.value + 'px'">
+        <span id="png-padding-display" class="sc-val">32px</span>
       </div>
     </div>
-    <div class="color-field">
-      <label>WIDTH</label>
-      <div id="width-btns" style="display:flex;gap:4px;">
-        <button class="scale-btn"        data-layout="full"                title="Full — maximum spacing"    onclick="setLayout('full')">FULL</button>
-        <button class="scale-btn active" data-layout="default"             title="Default — font default"    onclick="setLayout('default')">DEF</button>
-        <button class="scale-btn"        data-layout="fitted"              title="Fitted — characters touch"  onclick="setLayout('fitted')">FIT</button>
-        <button class="scale-btn"        data-layout="universal smushing"  title="Smush — maximum overlap"   onclick="setLayout('universal smushing')">SMUSH</button>
+
+    <!-- Col 3: Colors + Effects + Presets -->
+    <div class="settings-col">
+      <div class="sc-label">COLORS</div>
+      <div class="sc-row">
+        <span class="sc-key">PREVIEW</span>
+        <input type="color" id="preview-bg" value="#111111" title="Preview background"
+               oninput="document.getElementById('output-wrapper').style.background = this.value">
+        <span style="font-size:0.7rem;opacity:0.4;">BG</span>
+        <input type="color" id="preview-text" value="#c9a96e" title="Preview text"
+               oninput="document.getElementById('ascii-output').style.color = this.value">
+        <span style="font-size:0.7rem;opacity:0.4;">TEXT</span>
       </div>
-    </div>
-    <div class="color-field">
-      <label>BORDER</label>
-      <div id="border-btns" style="display:flex;gap:4px;">
-        <button class="scale-btn active" data-border="none"   onclick="setBorder('none')"   title="No border">NONE</button>
-        <button class="scale-btn"        data-border="simple" onclick="setBorder('simple')" title="Box (┌─┐)">BOX</button>
-        <button class="scale-btn"        data-border="double" onclick="setBorder('double')" title="Double (╔═╗)">DBL</button>
-        <button class="scale-btn"        data-border="hash"   onclick="setBorder('hash')"   title="Hash (#)">#</button>
+      <div class="sc-row">
+        <span class="sc-key">PNG</span>
+        <input type="color" id="png-bg" value="#111111" title="PNG background">
+        <span style="font-size:0.7rem;opacity:0.4;">BG</span>
+        <input type="color" id="png-text" value="#c9a96e" title="PNG text">
+        <span style="font-size:0.7rem;opacity:0.4;">TEXT</span>
       </div>
-    </div>
-    <div class="color-field">
-      <label>FLIP</label>
-      <div id="flip-btns" style="display:flex;gap:4px;">
-        <button class="scale-btn active" data-flip=""   onclick="setFlipMode('')"   title="No flip">NONE</button>
-        <button class="scale-btn"        data-flip="h"  onclick="setFlipMode('h')"  title="Horizontal mirror">↔ H</button>
-        <button class="scale-btn"        data-flip="v"  onclick="setFlipMode('v')"  title="Vertical mirror">↕ V</button>
-        <button class="scale-btn"        data-flip="hv" onclick="setFlipMode('hv')" title="Mirror both axes">⤡ HV</button>
+      <div class="sc-row" style="gap:12px;">
+        <label class="transparent-label" title="Transparent background">
+          <input type="checkbox" id="png-transparent" onchange="toggleTransparent(this.checked)">
+          <span>transparent</span>
+        </label>
+        <label class="transparent-label" title="Background gradient">
+          <input type="checkbox" id="png-bg-gradient" onchange="toggleBgGradient(this.checked)">
+          <span>bg grad</span>
+        </label>
       </div>
-    </div>
-    <div class="color-field">
-      <label>ECHO</label>
-      <div id="echo-btns" style="display:flex;gap:4px;">
-        <button class="scale-btn active" data-echo="none" onclick="setEchoMode('none')" title="No echo">NONE</button>
-        <button class="scale-btn"        data-echo="h"    onclick="setEchoMode('h')"    title="Mirror-duplicate horizontally">↔</button>
-        <button class="scale-btn"        data-echo="v"    onclick="setEchoMode('v')"    title="Mirror-duplicate vertically">↕</button>
-        <button class="scale-btn"        data-echo="hv"   onclick="setEchoMode('hv')"   title="Mirror-duplicate both">⊞</button>
+      <div class="sc-row">
+        <button class="color-util-btn" onclick="swapColors()" title="Swap bg &#x21C4; text">&#x21C4; SWAP</button>
+        <button class="color-util-btn" onclick="syncToPng()" title="Copy preview &#x2192; PNG">&#x2192; PNG</button>
+        <button class="color-util-btn" onclick="resetPrefs()" title="Reset all settings">&#x21BA; RESET</button>
       </div>
-    </div>
-  </div>
 
-  <div class="export-options">
-    <div class="color-field">
-      <label>PRESETS</label>
-      <div id="preset-swatches"></div>
-    </div>
-  </div>
-
-  <div class="export-options">
-    <div class="color-field">
-      <label>PREVIEW BG</label>
-      <input type="color" id="preview-bg" value="#111111" title="Live preview background color"
-             oninput="document.getElementById('output-wrapper').style.background = this.value">
-    </div>
-    <div class="color-field">
-      <label>PREVIEW TEXT</label>
-      <input type="color" id="preview-text" value="#c9a96e" title="Live preview text color"
-             oninput="document.getElementById('ascii-output').style.color = this.value">
-    </div>
-    <div class="color-field">
-      <label>PNG BG</label>
-      <input type="color" id="png-bg" value="#111111" title="PNG background color">
-      <label class="transparent-label" title="Transparent background">
-        <input type="checkbox" id="png-transparent" onchange="toggleTransparent(this.checked)">
-        <span>transparent</span>
-      </label>
-      <label class="transparent-label" title="Background gradient">
-        <input type="checkbox" id="png-bg-gradient" onchange="toggleBgGradient(this.checked)">
-        <span>bg grad</span>
-      </label>
-    </div>
-    <div class="color-field">
-      <label>PNG TEXT</label>
-      <input type="color" id="png-text" value="#c9a96e" title="PNG text color">
-    </div>
-    <div class="color-field" style="gap:6px;">
-      <button class="color-util-btn" onclick="swapColors()" title="Swap bg ↔ text colors">⇄ SWAP</button>
-      <button class="color-util-btn" onclick="syncToPng()" title="Copy preview colors → PNG colors">→ PNG</button>
-      <button class="color-util-btn" onclick="resetPrefs()" title="Reset all settings to defaults (keeps bookmarks)">↺ RESET</button>
-      <label class="transparent-label" title="Apply gradient to PNG text">
-        <input type="checkbox" id="png-gradient" onchange="toggleGradient(this.checked)">
-        <span>gradient</span>
-      </label>
-      <label class="transparent-label" title="Add glow/shadow to PNG text">
-        <input type="checkbox" id="png-shadow" onchange="toggleShadow(this.checked)">
-        <span>glow</span>
-      </label>
-      <label class="transparent-label" title="Add stroke outline to PNG text">
-        <input type="checkbox" id="png-outline" onchange="toggleOutline(this.checked)">
-        <span>outline</span>
-      </label>
-      <label class="transparent-label" title="Add CRT scanline overlay to PNG">
-        <input type="checkbox" id="png-scanlines" onchange="toggleScanlines(this.checked)">
-        <span>scanlines</span>
-      </label>
-      <label class="transparent-label" title="Add dark vignette edges to PNG">
-        <input type="checkbox" id="png-vignette" onchange="toggleVignette(this.checked)">
-        <span>vignette</span>
-      </label>
-    </div>
-  </div>
-
-  <div class="export-options" id="shadow-row" style="display:none">
-    <div class="color-field">
-      <label>GLOW COLOR</label>
-      <input type="color" id="shadow-color" value="#c9a96e">
-    </div>
-    <div class="color-field">
-      <label>BLUR</label>
-      <input type="range" id="shadow-blur" min="0" max="30" value="12" oninput="document.getElementById('shadow-blur-display').textContent=this.value+'px'">
-      <span id="shadow-blur-display">12px</span>
-    </div>
-    <div class="color-field">
-      <label>OFFSET</label>
-      <input type="range" id="shadow-offset" min="0" max="16" value="0" oninput="document.getElementById('shadow-offset-display').textContent=this.value+'px'">
-      <span id="shadow-offset-display">0px</span>
-    </div>
-  </div>
-
-  <div class="export-options" id="outline-row" style="display:none">
-    <div class="color-field">
-      <label>OUTLINE COLOR</label>
-      <input type="color" id="outline-color" value="#000000" title="Outline/stroke color">
-    </div>
-    <div class="color-field">
-      <label>STROKE WIDTH</label>
-      <input type="range" id="outline-width" min="1" max="8" value="2" oninput="document.getElementById('outline-width-display').textContent=this.value+'px'">
-      <span id="outline-width-display">2px</span>
-    </div>
-  </div>
-
-  <div class="export-options" id="bg-gradient-row" style="display:none">
-    <div class="color-field">
-      <label>BG GRAD TO</label>
-      <input type="color" id="bg-grad-to" value="#000000" title="Background gradient second color">
-    </div>
-    <div style="font-size:0.75rem;opacity:0.45;align-self:center;">uses same H/V direction as text gradient</div>
-  </div>
-
-  <div class="export-options" id="vignette-row" style="display:none">
-    <div class="color-field">
-      <label>VIGNETTE STRENGTH</label>
-      <input type="range" id="vignette-strength" min="0.1" max="0.95" value="0.6" step="0.05"
-             oninput="document.getElementById('vignette-strength-display').textContent=Math.round(this.value*100)+'%'">
-      <span id="vignette-strength-display">60%</span>
-    </div>
-  </div>
-
-  <div class="export-options" id="scanline-row" style="display:none">
-    <div class="color-field">
-      <label>SCANLINE OPACITY</label>
-      <input type="range" id="scanline-opacity" min="0.05" max="0.7" value="0.25" step="0.05"
-             oninput="document.getElementById('scanline-opacity-display').textContent=Math.round(this.value*100)+'%'">
-      <span id="scanline-opacity-display">25%</span>
-    </div>
-  </div>
-
-  <div class="export-options" id="gradient-row" style="display:none">
-    <div class="color-field">
-      <label>GRADIENT</label>
-      <div style="display:flex;gap:4px;">
-        <button class="scale-btn" id="grad-h-btn" data-graddir="h" onclick="setGradDir('h')" title="Horizontal">H</button>
-        <button class="scale-btn active" id="grad-v-btn" data-graddir="v" onclick="setGradDir('v')" title="Vertical">V</button>
+      <div class="sc-label">EFFECTS</div>
+      <div class="sc-row" style="flex-wrap:wrap;gap:10px;">
+        <label class="transparent-label" title="Gradient text">
+          <input type="checkbox" id="png-gradient" onchange="toggleGradient(this.checked)">
+          <span>gradient</span>
+        </label>
+        <label class="transparent-label" title="Glow/shadow">
+          <input type="checkbox" id="png-shadow" onchange="toggleShadow(this.checked)">
+          <span>glow</span>
+        </label>
+        <label class="transparent-label" title="Stroke outline">
+          <input type="checkbox" id="png-outline" onchange="toggleOutline(this.checked)">
+          <span>outline</span>
+        </label>
+        <label class="transparent-label" title="CRT scanlines">
+          <input type="checkbox" id="png-scanlines" onchange="toggleScanlines(this.checked)">
+          <span>scanlines</span>
+        </label>
+        <label class="transparent-label" title="Dark vignette">
+          <input type="checkbox" id="png-vignette" onchange="toggleVignette(this.checked)">
+          <span>vignette</span>
+        </label>
       </div>
+      <div id="gradient-row" style="display:none" class="sc-sub">
+        <span class="sc-key">GRADIENT</span>
+        <div style="display:flex;gap:4px;">
+          <button class="scale-btn" id="grad-h-btn" data-graddir="h" onclick="setGradDir('h')">H</button>
+          <button class="scale-btn active" id="grad-v-btn" data-graddir="v" onclick="setGradDir('v')">V</button>
+        </div>
+        <input type="color" id="grad-from" value="#ff2d78">
+        <span style="font-size:0.75rem;opacity:0.4;">&#x2192;</span>
+        <input type="color" id="grad-to" value="#00d4ff">
+      </div>
+      <div id="shadow-row" style="display:none" class="sc-sub">
+        <span class="sc-key">GLOW</span>
+        <input type="color" id="shadow-color" value="#c9a96e">
+        <input type="range" id="shadow-blur" min="0" max="30" value="12" oninput="document.getElementById('shadow-blur-display').textContent=this.value+'px'">
+        <span id="shadow-blur-display" class="sc-val">12px</span>
+        <input type="range" id="shadow-offset" min="0" max="16" value="0" oninput="document.getElementById('shadow-offset-display').textContent=this.value+'px'">
+        <span id="shadow-offset-display" class="sc-val">0px</span>
+      </div>
+      <div id="outline-row" style="display:none" class="sc-sub">
+        <span class="sc-key">OUTLINE</span>
+        <input type="color" id="outline-color" value="#000000">
+        <input type="range" id="outline-width" min="1" max="8" value="2" oninput="document.getElementById('outline-width-display').textContent=this.value+'px'">
+        <span id="outline-width-display" class="sc-val">2px</span>
+      </div>
+      <div id="bg-gradient-row" style="display:none" class="sc-sub">
+        <span class="sc-key">BG GRAD TO</span>
+        <input type="color" id="bg-grad-to" value="#000000">
+      </div>
+      <div id="vignette-row" style="display:none" class="sc-sub">
+        <span class="sc-key">VIGNETTE</span>
+        <input type="range" id="vignette-strength" min="0.1" max="0.95" value="0.6" step="0.05"
+               oninput="document.getElementById('vignette-strength-display').textContent=Math.round(this.value*100)+'%'">
+        <span id="vignette-strength-display" class="sc-val">60%</span>
+      </div>
+      <div id="scanline-row" style="display:none" class="sc-sub">
+        <span class="sc-key">SCANLINES</span>
+        <input type="range" id="scanline-opacity" min="0.05" max="0.7" value="0.25" step="0.05"
+               oninput="document.getElementById('scanline-opacity-display').textContent=Math.round(this.value*100)+'%'">
+        <span id="scanline-opacity-display" class="sc-val">25%</span>
+      </div>
+
+      <div class="sc-label">PRESETS</div>
+      <div id="preset-swatches" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     </div>
-    <div class="color-field">
-      <label>FROM</label>
-      <input type="color" id="grad-from" value="#ff2d78">
-    </div>
-    <div class="color-field">
-      <label>TO</label>
-      <input type="color" id="grad-to" value="#00d4ff">
-    </div>
+
   </div>
+
 
   <div id="output-wrapper">
     <pre id="ascii-output">Loading fonts...</pre>

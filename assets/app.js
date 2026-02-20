@@ -471,6 +471,14 @@
       document.getElementById('export-menu').classList.remove('open');
     }
 
+    function toggleSettings() {
+      const panel = document.getElementById('settings-panel');
+      const btn   = document.getElementById('settings-btn');
+      const open  = panel.classList.toggle('open');
+      btn.classList.toggle('active', open);
+      btn.textContent = open ? 'SETTINGS ▴' : 'SETTINGS ▾';
+    }
+
     function toggleToolsMenu() {
       document.getElementById('tools-menu').classList.toggle('open');
     }
