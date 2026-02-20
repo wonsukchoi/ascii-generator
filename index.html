@@ -594,6 +594,7 @@
       </div>
     </div>
     <button class="btn" onclick="generate()">GENERATE</button>
+    <button class="btn secondary" onclick="randomFont()" title="Random font">?</button>
 
     <div class="export-dropdown" id="export-dropdown">
       <button class="btn secondary" onclick="toggleExportMenu()">EXPORT ▾</button>
@@ -2371,6 +2372,12 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
     ];
 
     let activePreset = 'Gold';
+
+    function randomFont() {
+      const current = document.getElementById('font-select').value;
+      const others = FONT_LIST.filter(f => f !== current);
+      selectFont(others[Math.floor(Math.random() * others.length)]);
+    }
 
     function buildPresetSwatches() {
       const container = document.getElementById('preset-swatches');
