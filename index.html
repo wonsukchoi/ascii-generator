@@ -984,6 +984,15 @@
         <button class="scale-btn"        data-layout="universal smushing"  title="Smush — maximum overlap"   onclick="setLayout('universal smushing')">SMUSH</button>
       </div>
     </div>
+    <div class="color-field">
+      <label>BORDER</label>
+      <div id="border-btns" style="display:flex;gap:4px;">
+        <button class="scale-btn active" data-border="none"   onclick="setBorder('none')"   title="No border">NONE</button>
+        <button class="scale-btn"        data-border="simple" onclick="setBorder('simple')" title="Box (┌─┐)">BOX</button>
+        <button class="scale-btn"        data-border="double" onclick="setBorder('double')" title="Double (╔═╗)">DBL</button>
+        <button class="scale-btn"        data-border="hash"   onclick="setBorder('hash')"   title="Hash (#)">#</button>
+      </div>
+    </div>
   </div>
 
   <div class="export-options">
@@ -2636,7 +2645,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         const rendered = await Promise.all(
           inputLines.map(line => line.trim() ? figletAsync(line, font, currentLayout) : Promise.resolve(''))
         );
-        currentArt = alignArt(rendered.join('\n'.repeat(blockGap + 1)), currentAlign);
+        currentArt = applyBorder(alignArt(rendered.join('\n'.repeat(blockGap + 1)), currentAlign), borderStyle);
         output.textContent = currentArt;
         const artLines = currentArt.split('\n');
         const lineCount = artLines.length;
@@ -3232,6 +3241,38 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       applyPreviewSize();
     }
 
+    let borderStyle = 'none';
+
+    function applyBorder(art, style) {
+      if (style === 'none') return art;
+      const lines  = art.split('\n');
+      const maxLen = Math.max(...lines.map(l => l.length));
+      const padded = lines.map(l => l + ' '.repeat(maxLen - l.length));
+      if (style === 'simple') {
+        const top = '┌' + '─'.repeat(maxLen + 2) + '┐';
+        const bot = '└' + '─'.repeat(maxLen + 2) + '┘';
+        return [top, ...padded.map(l => '│ ' + l + ' │'), bot].join('\n');
+      }
+      if (style === 'double') {
+        const top = '╔' + '═'.repeat(maxLen + 2) + '╗';
+        const bot = '╚' + '═'.repeat(maxLen + 2) + '╝';
+        return [top, ...padded.map(l => '║ ' + l + ' ║'), bot].join('\n');
+      }
+      if (style === 'hash') {
+        const hr = '#'.repeat(maxLen + 4);
+        return [hr, ...padded.map(l => '# ' + l + ' #'), hr].join('\n');
+      }
+      return art;
+    }
+
+    function setBorder(style) {
+      borderStyle = style;
+      document.querySelectorAll('#border-btns .scale-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.border === style)
+      );
+      generate();
+    }
+
     let blockGap = 0;
 
     function updateBlockGap(val) {
@@ -3372,6 +3413,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         pngText: document.getElementById('png-text').value,
         transparent: document.getElementById('png-transparent').checked,
         blockGap,
+        borderStyle,
       };
       bookmarks.unshift(bm);
       if (bookmarks.length > 20) bookmarks.pop();
@@ -3415,6 +3457,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         bgSlider.value = bm.blockGap;
         document.getElementById('block-gap-display').textContent = bm.blockGap;
       }
+      if (bm.borderStyle !== undefined) setBorder(bm.borderStyle);
       restoringHistory = false;
       generate();
     }
