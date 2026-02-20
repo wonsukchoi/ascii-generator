@@ -931,7 +931,13 @@
     </div>
     <button class="btn" onclick="generate()">GENERATE</button>
     <button class="btn secondary" onclick="randomFont()" title="Random font">?</button>
-    <button class="btn secondary" id="anim-btn" onclick="toggleAnimation()" title="Typewriter animation">▶ PLAY</button>
+    <button class="btn secondary" id="anim-btn" onclick="toggleAnimation()" title="Typewriter animation (P)">▶ PLAY</button>
+    <label class="transparent-label" title="Animation speed" style="gap:4px;">
+      <input type="range" id="anim-speed" min="1" max="30" value="8" style="width:50px;max-width:50px;">
+    </label>
+    <label class="transparent-label" title="Loop animation">
+      <input type="checkbox" id="anim-loop"><span>loop</span>
+    </label>
     <button class="btn secondary" onclick="randomText()" title="Random text input">RANDOM</button>
     <button class="btn secondary" onclick="openAllFonts()" title="Preview all fonts">ALL FONTS</button>
 
@@ -1109,6 +1115,10 @@
         <input type="checkbox" id="png-transparent" onchange="toggleTransparent(this.checked)">
         <span>transparent</span>
       </label>
+      <label class="transparent-label" title="Background gradient">
+        <input type="checkbox" id="png-bg-gradient" onchange="toggleBgGradient(this.checked)">
+        <span>bg grad</span>
+      </label>
     </div>
     <div class="color-field">
       <label>PNG TEXT</label>
@@ -1168,6 +1178,14 @@
       <input type="range" id="outline-width" min="1" max="8" value="2" oninput="document.getElementById('outline-width-display').textContent=this.value+'px'">
       <span id="outline-width-display">2px</span>
     </div>
+  </div>
+
+  <div class="export-options" id="bg-gradient-row" style="display:none">
+    <div class="color-field">
+      <label>BG GRAD TO</label>
+      <input type="color" id="bg-grad-to" value="#000000" title="Background gradient second color">
+    </div>
+    <div style="font-size:0.75rem;opacity:0.45;align-self:center;">uses same H/V direction as text gradient</div>
   </div>
 
   <div class="export-options" id="vignette-row" style="display:none">
@@ -2845,7 +2863,12 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         const artLines = currentArt.split('\n');
         const lineCount = artLines.length;
         const maxChars  = Math.max(...artLines.map(l => l.length));
-        status.textContent = `Font: ${font} · ${lineCount} lines · ${maxChars} chars wide`;
+        const fs  = parseInt(document.getElementById('font-size-slider').value, 10);
+        const lh  = Math.ceil(fs * lineHeightMult);
+        const pad = parseInt(document.getElementById('png-padding-slider').value, 10);
+        const estW = Math.round(maxChars * fs * 0.603 + pad * 2);
+        const estH = Math.round(lineCount * lh + pad * 2);
+        status.textContent = `Font: ${font} · ${lineCount} lines · ${maxChars} chars · ~${estW}×${estH}px`;
         const params = new URLSearchParams({ text: raw, font });
         history.replaceState(null, '', '#' + params.toString());
         document.title = (raw.trim().slice(0, 24) || 'ASCII') + ' — ASCII Generator';
@@ -2863,14 +2886,19 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       if (!currentArt) return;
       stopAnimation();
       const output = document.getElementById('ascii-output');
-      const btn = document.getElementById('anim-btn');
-      const art = currentArt;
+      const btn    = document.getElementById('anim-btn');
+      const art    = currentArt;
       let i = 0;
       btn.textContent = '■ STOP';
       animTimer = setInterval(() => {
-        i = Math.min(i + 8, art.length);
+        const speed = parseInt(document.getElementById('anim-speed').value, 10);
+        const loop  = document.getElementById('anim-loop').checked;
+        i = Math.min(i + speed, art.length);
         output.textContent = art.slice(0, i);
-        if (i >= art.length) { stopAnimation(); btn.textContent = '▶ PLAY'; }
+        if (i >= art.length) {
+          if (loop) { setTimeout(() => { i = 0; }, 600); }
+          else { stopAnimation(); btn.textContent = '▶ PLAY'; }
+        }
       }, 16);
     }
 
@@ -3024,6 +3052,10 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
 
     function toggleVignette(checked) {
       document.getElementById('vignette-row').style.display = checked ? 'flex' : 'none';
+    }
+
+    function toggleBgGradient(checked) {
+      document.getElementById('bg-gradient-row').style.display = checked ? 'flex' : 'none';
     }
 
     function setGradDir(dir) {
@@ -3469,7 +3501,18 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
 
       const ctx = canvas.getContext('2d');
       if (!transparent) {
-        ctx.fillStyle = bgColor;
+        const useBgGrad = document.getElementById('png-bg-gradient').checked;
+        if (useBgGrad) {
+          const bgGradTo = document.getElementById('bg-grad-to').value;
+          const bgG = gradDir === 'h'
+            ? ctx.createLinearGradient(0, 0, canvas.width, 0)
+            : ctx.createLinearGradient(0, 0, 0, canvas.height);
+          bgG.addColorStop(0, bgColor);
+          bgG.addColorStop(1, bgGradTo);
+          ctx.fillStyle = bgG;
+        } else {
+          ctx.fillStyle = bgColor;
+        }
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
