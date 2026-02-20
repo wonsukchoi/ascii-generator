@@ -906,8 +906,9 @@
 
   <h1>ASCII Generator</h1>
 
+  <div id="input-stats" style="width:100%;max-width:900px;font-size:0.7rem;opacity:0.35;letter-spacing:0.5px;margin-bottom:4px;text-align:right;">5 chars</div>
   <div class="controls">
-    <textarea id="text-input" placeholder="Type your text...&#10;Each line renders separately" rows="2">HELLO</textarea>
+    <textarea id="text-input" placeholder="Type your text...&#10;Each line renders separately&#10;(drag &amp; drop .txt file)" rows="2">HELLO</textarea>
     <!-- hidden select keeps existing JS working unchanged -->
     <select id="font-select" style="display:none"></select>
 
@@ -940,6 +941,7 @@
     </label>
     <button class="btn secondary" onclick="randomText()" title="Random text input">RANDOM</button>
     <button class="btn secondary" onclick="openAllFonts()" title="Preview all fonts">ALL FONTS</button>
+    <button class="btn secondary" onclick="openHelp()" title="Keyboard shortcuts &amp; feature guide">HELP</button>
 
     <div class="export-dropdown" id="export-dropdown">
       <button class="btn secondary" onclick="toggleExportMenu()">EXPORT ▾</button>
@@ -3644,14 +3646,26 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       const gradFrom    = document.getElementById('grad-from').value;
       const gradTo      = document.getElementById('grad-to').value;
 
-      let defsBlock = '';
+      let defsInner = '';
       let fillAttr  = `fill="${textColor}"`;
+      let filterAttr = '';
+
       if (useGradient) {
         const x2 = gradDir === 'h' ? '100%' : '0%';
         const y2 = gradDir === 'h' ? '0%'   : '100%';
-        defsBlock = `<defs><linearGradient id="tg" x1="0%" y1="0%" x2="${x2}" y2="${y2}"><stop offset="0%" stop-color="${gradFrom}"/><stop offset="100%" stop-color="${gradTo}"/></linearGradient></defs>`;
+        defsInner += `<linearGradient id="tg" x1="0%" y1="0%" x2="${x2}" y2="${y2}"><stop offset="0%" stop-color="${gradFrom}"/><stop offset="100%" stop-color="${gradTo}"/></linearGradient>`;
         fillAttr  = 'fill="url(#tg)"';
       }
+
+      if (document.getElementById('png-shadow').checked) {
+        const shadowColor  = document.getElementById('shadow-color').value;
+        const shadowBlur   = parseInt(document.getElementById('shadow-blur').value, 10);
+        const shadowOffset = parseInt(document.getElementById('shadow-offset').value, 10);
+        defsInner += `<filter id="shd" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="${shadowOffset}" dy="${shadowOffset}" stdDeviation="${shadowBlur / 2}" flood-color="${shadowColor}"/></filter>`;
+        filterAttr = 'filter="url(#shd)"';
+      }
+
+      const defsBlock = defsInner ? `<defs>${defsInner}</defs>` : '';
 
       const textLines = lines.map((line, i) =>
         `<text x="${pad}" y="${pad + i * lineHeight + fontSize}">${escapeXml(line)}</text>`
@@ -3660,7 +3674,7 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   ${defsBlock}
   ${bgRect}
-  <g font-family="'Courier New', Courier, monospace" font-size="${fontSize}" ${fillAttr} xml:space="preserve">
+  <g font-family="'Courier New', Courier, monospace" font-size="${fontSize}" ${fillAttr} ${filterAttr} xml:space="preserve">
   ${textLines}
   </g>
 </svg>`;
@@ -3916,11 +3930,20 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       debounceTimer = setTimeout(generate, 300);
     }
 
-    // Textarea auto-resize + debounced generate
+    // Textarea auto-resize + debounced generate + input stats
     const _ta = document.getElementById('text-input');
+    function updateInputStats() {
+      const v = _ta.value;
+      const chars = v.length;
+      const words = v.trim() ? v.trim().split(/\s+/).length : 0;
+      const lines = v.split('\n').length;
+      document.getElementById('input-stats').textContent =
+        `${lines} line${lines !== 1 ? 's' : ''} · ${words} word${words !== 1 ? 's' : ''} · ${chars} char${chars !== 1 ? 's' : ''}`;
+    }
     _ta.addEventListener('input', () => {
       _ta.style.height = 'auto';
       _ta.style.height = Math.min(_ta.scrollHeight, 300) + 'px';
+      updateInputStats();
       if (!restoringHistory) debouncedGenerate();
     });
 
@@ -3978,7 +4001,7 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       if (!mod && !e.shiftKey && e.key.toLowerCase() === 'p' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { toggleAnimation(); }
       if (mod && e.key === 'ArrowLeft')                      { e.preventDefault(); navigateHistory(-1); }
       if (mod && e.key === 'ArrowRight')                     { e.preventDefault(); navigateHistory(1); }
-      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeAllFonts(); exitFocus(); }
+      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeAllFonts(); closeHelp(); exitFocus(); }
     });
 
     document.getElementById('font-select').addEventListener('change', () => { if (!restoringHistory) generate(); });
@@ -4024,6 +4047,16 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
 
     function closeAllFonts() {
       document.getElementById('all-fonts-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function openHelp() {
+      document.getElementById('help-overlay').style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeHelp() {
+      document.getElementById('help-overlay').style.display = 'none';
       document.body.style.overflow = '';
     }
 
@@ -4280,9 +4313,38 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
           document.getElementById('theme-toggle').textContent = 'DARK';
         }
       }
+      updateInputStats();
       generate();
     });
   </script>
+
+  <div id="help-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:300;overflow-y:auto;padding:40px 24px;">
+    <div style="max-width:600px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;">
+        <span style="font-size:0.8rem;letter-spacing:3px;opacity:0.5;">KEYBOARD SHORTCUTS &amp; FEATURES</span>
+        <button onclick="closeHelp()" style="background:transparent;border:1px solid #c9a96e55;color:#c9a96e;font-family:'Courier New',monospace;font-size:0.8rem;padding:5px 14px;cursor:pointer;letter-spacing:1px;">✕ CLOSE</button>
+      </div>
+      <div style="display:grid;gap:6px;font-size:0.82rem;line-height:1.6;">
+        <div style="font-size:0.65rem;letter-spacing:2px;opacity:0.4;margin-top:8px;">KEYBOARD</div>
+        <div><kbd style="font-family:'Courier New',monospace;border:1px solid #c9a96e66;padding:1px 5px;border-radius:2px;">⌘↵</kbd> Generate &nbsp; <kbd style="font-family:'Courier New',monospace;border:1px solid #c9a96e66;padding:1px 5px;border-radius:2px;">R</kbd> Random font &nbsp; <kbd style="font-family:'Courier New',monospace;border:1px solid #c9a96e66;padding:1px 5px;border-radius:2px;">P</kbd> Play/Stop</div>
+        <div><kbd style="font-family:'Courier New',monospace;border:1px solid #c9a96e66;padding:1px 5px;border-radius:2px;">⌘⇧C</kbd> Copy PNG &nbsp; <kbd style="font-family:'Courier New',monospace;border:1px solid #c9a96e66;padding:1px 5px;border-radius:2px;">⌘⇧S</kbd> Save PNG &nbsp; <kbd style="font-family:'Courier New',monospace;border:1px solid #c9a96e66;padding:1px 5px;border-radius:2px;">⌘⇧L</kbd> Copy Link</div>
+        <div><kbd style="font-family:'Courier New',monospace;border:1px solid #c9a96e66;padding:1px 5px;border-radius:2px;">⌘←/→</kbd> History &nbsp; <kbd style="font-family:'Courier New',monospace;border:1px solid #c9a96e66;padding:1px 5px;border-radius:2px;">F</kbd> Focus mode &nbsp; <kbd style="font-family:'Courier New',monospace;border:1px solid #c9a96e66;padding:1px 5px;border-radius:2px;">Esc</kbd> Close menus</div>
+        <div><kbd style="font-family:'Courier New',monospace;border:1px solid #c9a96e66;padding:1px 5px;border-radius:2px;">Tab</kbd> Insert 2 spaces in textarea &nbsp; <span style="opacity:0.5;">Double-click output → copy text</span></div>
+        <div style="font-size:0.65rem;letter-spacing:2px;opacity:0.4;margin-top:14px;">FONTS (43 EMBEDDED)</div>
+        <div style="opacity:0.7;">Banner3-D · ANSI Shadow · Doom · Epic · Colossal · Star Wars · Doh · Isometric1 · Larry 3D · Block · Bloody · Calvin S · 3D-ASCII · Graffiti · Gothic · Cyberlarge · Roman · Shadow · Slant · Big · Standard · and 23 more</div>
+        <div style="font-size:0.65rem;letter-spacing:2px;opacity:0.4;margin-top:14px;">TEXT TRANSFORMS</div>
+        <div>Letter spacing · Word wrap · Case (UPPER/lower/Title/tOGGLE) · Space fill char · Flip (H/V/HV) · Echo mirror-duplicate (H/V/HV)</div>
+        <div style="font-size:0.65rem;letter-spacing:2px;opacity:0.4;margin-top:14px;">PNG EFFECTS</div>
+        <div>Gradient text (H/V, FROM→TO) · Bg gradient · Glow/shadow + preview mirror · Stroke outline · CRT scanlines · Vignette · 1×–4× resolution scale</div>
+        <div style="font-size:0.65rem;letter-spacing:2px;opacity:0.4;margin-top:14px;">EXPORTS</div>
+        <div>PNG · SVG (with gradient + shadow filter) · TXT · ANSI (truecolor .ans) · HTML snippet · Full HTML page · All Fonts TXT · Print · 𝕏 Twitter share</div>
+        <div style="font-size:0.65rem;letter-spacing:2px;opacity:0.4;margin-top:14px;">PERSISTENCE</div>
+        <div>Bookmarks (save/restore/delete, import/export JSON) · Recent fonts (last 5) · Auto-save all settings · URL hash sharing · History (last 10)</div>
+        <div style="font-size:0.65rem;letter-spacing:2px;opacity:0.4;margin-top:14px;">OTHER</div>
+        <div>Typewriter animation (speed + loop) · Random text · Drag &amp; drop text files · Auto-fit zoom · All Fonts modal · Color presets (12 + 4 custom) · Mobile responsive · Focus mode · Light/Dark mode</div>
+      </div>
+    </div>
+  </div>
 
   <div id="all-fonts-overlay">
     <div id="all-fonts-header">
