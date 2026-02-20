@@ -1082,6 +1082,8 @@
     <span><kbd>⌘</kbd><kbd>⇧</kbd><kbd>S</kbd> save png</span>
     <span><kbd>⌘</kbd><kbd>⇧</kbd><kbd>L</kbd> copy link</span>
     <span><kbd>esc</kbd> close menu</span>
+    <span><kbd>R</kbd> random font</span>
+    <span>dbl-click output → copy text</span>
   </div>
 
   <script>
@@ -2642,6 +2644,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         status.textContent = `Font: ${font} · ${lineCount} lines · ${maxChars} chars wide`;
         const params = new URLSearchParams({ text: raw, font });
         history.replaceState(null, '', '#' + params.toString());
+        document.title = (raw.trim().slice(0, 24) || 'ASCII') + ' — ASCII Generator';
         if (!restoringHistory) pushHistory({ text: raw, font, layout: currentLayout, align: currentAlign, art: currentArt });
       } catch (err) {
         output.textContent = `Error: ${err.message}`;
@@ -3153,13 +3156,27 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       const bgRect = transparent ? '' :
         `<rect width="${w}" height="${h}" fill="${bgColor}"/>`;
 
+      const useGradient = document.getElementById('png-gradient').checked;
+      const gradFrom    = document.getElementById('grad-from').value;
+      const gradTo      = document.getElementById('grad-to').value;
+
+      let defsBlock = '';
+      let fillAttr  = `fill="${textColor}"`;
+      if (useGradient) {
+        const x2 = gradDir === 'h' ? '100%' : '0%';
+        const y2 = gradDir === 'h' ? '0%'   : '100%';
+        defsBlock = `<defs><linearGradient id="tg" x1="0%" y1="0%" x2="${x2}" y2="${y2}"><stop offset="0%" stop-color="${gradFrom}"/><stop offset="100%" stop-color="${gradTo}"/></linearGradient></defs>`;
+        fillAttr  = 'fill="url(#tg)"';
+      }
+
       const textLines = lines.map((line, i) =>
         `<text x="${pad}" y="${pad + i * lineHeight + fontSize}">${escapeXml(line)}</text>`
       ).join('\n  ');
 
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  ${defsBlock}
   ${bgRect}
-  <g font-family="'Courier New', Courier, monospace" font-size="${fontSize}" fill="${textColor}" xml:space="preserve">
+  <g font-family="'Courier New', Courier, monospace" font-size="${fontSize}" ${fillAttr} xml:space="preserve">
   ${textLines}
   </g>
 </svg>`;
@@ -3273,10 +3290,15 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       if (mod && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); copyPng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); savePng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'l') { e.preventDefault(); copyLink(); }
+      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'r' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { randomFont(); }
       if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeAllFonts(); }
     });
 
     document.getElementById('font-select').addEventListener('change', () => { if (!restoringHistory) generate(); });
+
+    document.getElementById('output-wrapper').addEventListener('dblclick', () => {
+      if (currentArt) navigator.clipboard.writeText(currentArt).then(() => flash('COPIED TEXT!'));
+    });
 
     // ── All Fonts ─────────────────────────────────────────────────────────
     async function openAllFonts() {
