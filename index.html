@@ -302,6 +302,7 @@
     <button class="btn secondary" onclick="copyArt()">COPY TEXT</button>
     <button class="btn secondary" onclick="copyPng()">COPY PNG</button>
     <button class="btn secondary" onclick="savePng()">SAVE PNG</button>
+    <button class="btn secondary" onclick="saveTxt()">SAVE TXT</button>
   </div>
 
   <div class="font-size-row">
@@ -1957,6 +1958,18 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
             document.getElementById('status').textContent = 'Clipboard PNG not supported in this browser — use Save PNG instead.';
           });
       });
+    }
+
+    function saveTxt() {
+      if (!currentArt) return;
+      const name = document.getElementById('text-input').value.trim() || 'ascii';
+      const blob = new Blob([currentArt], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.download = `${name.toLowerCase().replace(/\s+/g, '-')}-ascii.txt`;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+      flash('SAVED TXT!');
     }
 
     function savePng() {
