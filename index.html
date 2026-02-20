@@ -579,6 +579,35 @@
     }
     #theme-toggle:hover { opacity: 1; }
 
+    #focus-btn {
+      position: fixed;
+      top: 16px;
+      right: 82px;
+      background: transparent;
+      border: 1px solid #c9a96e55;
+      color: #c9a96e;
+      padding: 6px 14px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.15s;
+      z-index: 100;
+    }
+    #focus-btn:hover { opacity: 1; }
+    body.light #focus-btn { border-color: #7a5c1e55; color: #7a5c1e; }
+
+    body.focus-mode .controls,
+    body.focus-mode .font-size-row,
+    body.focus-mode .export-options,
+    body.focus-mode #history-nav,
+    body.focus-mode #status,
+    body.focus-mode #shortcuts,
+    body.focus-mode h1 { display: none !important; }
+    body.focus-mode #focus-btn { opacity: 1; letter-spacing: 1px; right: 20px; }
+    body.focus-mode #theme-toggle { right: 86px; }
+
     /* Light mode overrides */
     body.light {
       background: #f5f0e8;
@@ -872,6 +901,7 @@
 <body>
 
   <button id="theme-toggle" onclick="toggleTheme()">LIGHT</button>
+  <button id="focus-btn" onclick="toggleFocus()" title="Focus mode — hide controls">FOCUS</button>
 
   <h1>ASCII Generator</h1>
 
@@ -1092,6 +1122,7 @@
     <span><kbd>⌘</kbd><kbd>⇧</kbd><kbd>L</kbd> copy link</span>
     <span><kbd>esc</kbd> close menu</span>
     <span><kbd>R</kbd> random font</span>
+    <span><kbd>⌘</kbd><kbd>←</kbd><kbd>→</kbd> history</span>
     <span>dbl-click output → copy text</span>
   </div>
 
@@ -2908,14 +2939,18 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     });
 
     const COLOR_PRESETS = [
-      { name: 'Gold',   bg: '#111111', text: '#c9a96e' },
-      { name: 'Matrix', bg: '#0d1117', text: '#00ff41' },
-      { name: 'Cyber',  bg: '#0d0d0d', text: '#ff2d78' },
-      { name: 'Neon',   bg: '#050510', text: '#00d4ff' },
-      { name: 'Retro',  bg: '#1a1400', text: '#ffb000' },
-      { name: 'Blood',  bg: '#0a0000', text: '#cc0000' },
-      { name: 'Paper',  bg: '#f5f0e8', text: '#1a1a1a' },
-      { name: 'Ghost',  bg: '#e8e8e8', text: '#888888' },
+      { name: 'Gold',  bg: '#111111', text: '#c9a96e' },
+      { name: 'Matrix',bg: '#0d1117', text: '#00ff41' },
+      { name: 'Cyber', bg: '#0d0d0d', text: '#ff2d78' },
+      { name: 'Neon',  bg: '#050510', text: '#00d4ff' },
+      { name: 'Retro', bg: '#1a1400', text: '#ffb000' },
+      { name: 'Blood', bg: '#0a0000', text: '#cc0000' },
+      { name: 'Paper', bg: '#f5f0e8', text: '#1a1a1a' },
+      { name: 'Ghost', bg: '#e8e8e8', text: '#888888' },
+      { name: 'Synth', bg: '#0d0221', text: '#ff71ce' },
+      { name: 'Ocean', bg: '#0a1628', text: '#00ccff' },
+      { name: 'Forest',bg: '#0d1a0f', text: '#39d353' },
+      { name: 'Void',  bg: '#000000', text: '#555555' },
     ];
 
     let activePreset = 'Gold';
@@ -2963,6 +2998,18 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     function toggleTheme() {
       const light = document.body.classList.toggle('light');
       document.getElementById('theme-toggle').textContent = light ? 'DARK' : 'LIGHT';
+    }
+
+    function toggleFocus() {
+      const on = document.body.classList.toggle('focus-mode');
+      document.getElementById('focus-btn').textContent = on ? 'EXIT' : 'FOCUS';
+    }
+
+    function exitFocus() {
+      if (document.body.classList.contains('focus-mode')) {
+        document.body.classList.remove('focus-mode');
+        document.getElementById('focus-btn').textContent = 'FOCUS';
+      }
     }
 
     let currentLayout = 'default';
@@ -3332,7 +3379,9 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       if (mod && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); savePng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'l') { e.preventDefault(); copyLink(); }
       if (!mod && !e.shiftKey && e.key.toLowerCase() === 'r' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { randomFont(); }
-      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeAllFonts(); }
+      if (mod && e.key === 'ArrowLeft')                      { e.preventDefault(); navigateHistory(-1); }
+      if (mod && e.key === 'ArrowRight')                     { e.preventDefault(); navigateHistory(1); }
+      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeAllFonts(); exitFocus(); }
     });
 
     document.getElementById('font-select').addEventListener('change', () => { if (!restoringHistory) generate(); });
