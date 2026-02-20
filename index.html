@@ -724,6 +724,23 @@
       color: #c9a96e;
     }
 
+    /* Utility color buttons */
+    .color-util-btn {
+      background: transparent;
+      border: 1px solid #c9a96e55;
+      color: #c9a96e;
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      padding: 4px 9px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      opacity: 0.7;
+    }
+    .color-util-btn:hover { background: #c9a96e22; opacity: 1; }
+    body.light .color-util-btn { border-color: #7a5c1e55; color: #7a5c1e; }
+    body.light .color-util-btn:hover { background: #7a5c1e22; }
+
     body.light #bm-name-input { border-color: #7a5c1e44; color: #7a5c1e; }
     body.light #bm-name-input::placeholder { color: #7a5c1e44; }
     body.light .bm-save-btn { border-color: #7a5c1e55; color: #7a5c1e; }
@@ -775,6 +792,7 @@
         <button class="export-item" onclick="saveTxt()">TXT</button>
         <button class="export-item" onclick="saveSvg()">SVG</button>
         <button class="export-item" onclick="saveHtml()">HTML</button>
+        <button class="export-item" onclick="printArt()">Print</button>
       </div>
     </div>
 
@@ -864,6 +882,10 @@
     <div class="color-field">
       <label>PNG TEXT</label>
       <input type="color" id="png-text" value="#c9a96e" title="PNG text color">
+    </div>
+    <div class="color-field" style="gap:6px;">
+      <button class="color-util-btn" onclick="swapColors()" title="Swap bg ↔ text colors">⇄ SWAP</button>
+      <button class="color-util-btn" onclick="syncToPng()" title="Copy preview colors → PNG colors">→ PNG</button>
     </div>
   </div>
 
@@ -2473,6 +2495,45 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
 
     function toggleTransparent(checked) {
       document.getElementById('png-bg').classList.toggle('disabled', checked);
+    }
+
+    function swapColors() {
+      const prevBg  = document.getElementById('preview-bg');
+      const prevTxt = document.getElementById('preview-text');
+      const pngBg   = document.getElementById('png-bg');
+      const pngTxt  = document.getElementById('png-text');
+      // Swap preview pair
+      const tmp1 = prevBg.value; prevBg.value = prevTxt.value; prevTxt.value = tmp1;
+      document.getElementById('output-wrapper').style.background = prevBg.value;
+      document.getElementById('ascii-output').style.color = prevTxt.value;
+      // Swap PNG pair
+      const tmp2 = pngBg.value; pngBg.value = pngTxt.value; pngTxt.value = tmp2;
+      flash('SWAPPED!');
+    }
+
+    function syncToPng() {
+      const prevBg  = document.getElementById('preview-bg').value;
+      const prevTxt = document.getElementById('preview-text').value;
+      document.getElementById('png-bg').value  = prevBg;
+      document.getElementById('png-text').value = prevTxt;
+      flash('SYNCED!');
+    }
+
+    function printArt() {
+      closeExportMenu();
+      if (!currentArt) return;
+      const bg  = document.getElementById('preview-bg').value;
+      const fg  = document.getElementById('preview-text').value;
+      const fs  = parseInt(document.getElementById('font-size-slider').value, 10);
+      const win = window.open('', '_blank');
+      win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+  @media print { body { margin: 0; } }
+  body { margin: 0; background: ${bg}; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  pre { font-family: 'Courier New', Courier, monospace; font-size: ${fs}px; line-height: 1.15; color: ${fg}; white-space: pre; padding: 40px; }
+</style></head><body><pre>${currentArt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+<script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
+      win.document.close();
     }
 
     const FONT_LIST = [
