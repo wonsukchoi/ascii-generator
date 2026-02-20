@@ -3006,6 +3006,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     function toggleTheme() {
       const light = document.body.classList.toggle('light');
       document.getElementById('theme-toggle').textContent = light ? 'DARK' : 'LIGHT';
+      savePrefs();
     }
 
     function toggleFocus() {
@@ -3027,6 +3028,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       document.querySelectorAll('#width-btns .scale-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.layout === layout)
       );
+      savePrefs();
       generate();
     }
 
@@ -3097,6 +3099,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         btn.classList.toggle('active', btn.dataset.align === align)
       );
       generate();
+      savePrefs();
     }
 
     let pngScale = 1;
@@ -3106,6 +3109,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       document.querySelectorAll('.scale-btn').forEach(btn => {
         btn.classList.toggle('active', parseInt(btn.dataset.scale) === s);
       });
+      savePrefs();
     }
 
     function buildCanvas() {
@@ -3326,6 +3330,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         btn.classList.toggle('active', btn.dataset.border === style)
       );
       generate();
+      savePrefs();
     }
 
     let blockGap = 0;
@@ -3580,20 +3585,99 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     }
 
     // Read URL hash on load and pre-populate inputs
+    // ── Preferences persistence ───────────────────────────────────────────
+    function savePrefs() {
+      const prefs = {
+        fontSize:   document.getElementById('font-size-slider').value,
+        zoom:       document.getElementById('zoom-slider').value,
+        blockGap:   document.getElementById('block-gap-slider').value,
+        pngPad:     document.getElementById('png-padding-slider').value,
+        pngScale:   pngScale,
+        align:      currentAlign,
+        layout:     currentLayout,
+        border:     borderStyle,
+        gradDir,
+        previewBg:  document.getElementById('preview-bg').value,
+        previewText:document.getElementById('preview-text').value,
+        pngBg:      document.getElementById('png-bg').value,
+        pngText:    document.getElementById('png-text').value,
+        transparent:document.getElementById('png-transparent').checked,
+        gradient:   document.getElementById('png-gradient').checked,
+        gradFrom:   document.getElementById('grad-from').value,
+        gradTo:     document.getElementById('grad-to').value,
+        shadow:     document.getElementById('png-shadow').checked,
+        shadowColor:document.getElementById('shadow-color').value,
+        shadowBlur: document.getElementById('shadow-blur').value,
+        shadowOffset:document.getElementById('shadow-offset').value,
+        light:      document.body.classList.contains('light'),
+        font:       document.getElementById('font-select').value,
+      };
+      localStorage.setItem('ascii-prefs', JSON.stringify(prefs));
+    }
+
+    function loadPrefs() {
+      try {
+        const stored = localStorage.getItem('ascii-prefs');
+        if (!stored) return;
+        const p = JSON.parse(stored);
+
+        if (p.fontSize)    { document.getElementById('font-size-slider').value = p.fontSize; updateFontSize(p.fontSize); }
+        if (p.zoom)        { document.getElementById('zoom-slider').value = p.zoom; updateZoom(p.zoom); }
+        if (p.blockGap != null) { blockGap = +p.blockGap; document.getElementById('block-gap-slider').value = p.blockGap; document.getElementById('block-gap-display').textContent = p.blockGap; }
+        if (p.pngPad)      { document.getElementById('png-padding-slider').value = p.pngPad; document.getElementById('png-padding-display').textContent = p.pngPad + 'px'; }
+        if (p.pngScale)    setScale(+p.pngScale);
+        if (p.align)       setAlign(p.align);
+        if (p.layout)      setLayout(p.layout);
+        if (p.border)      setBorder(p.border);
+        if (p.gradDir)     { gradDir = p.gradDir; setGradDir(p.gradDir); }
+        if (p.previewBg)   { document.getElementById('preview-bg').value = p.previewBg; document.getElementById('output-wrapper').style.background = p.previewBg; }
+        if (p.previewText) { document.getElementById('preview-text').value = p.previewText; document.getElementById('ascii-output').style.color = p.previewText; }
+        if (p.pngBg)       document.getElementById('png-bg').value = p.pngBg;
+        if (p.pngText)     document.getElementById('png-text').value = p.pngText;
+        if (p.transparent) { document.getElementById('png-transparent').checked = p.transparent; toggleTransparent(p.transparent); }
+        if (p.gradient)    { document.getElementById('png-gradient').checked = p.gradient; toggleGradient(p.gradient); }
+        if (p.gradFrom)    document.getElementById('grad-from').value = p.gradFrom;
+        if (p.gradTo)      document.getElementById('grad-to').value = p.gradTo;
+        if (p.shadow)      { document.getElementById('png-shadow').checked = p.shadow; toggleShadow(p.shadow); }
+        if (p.shadowColor) document.getElementById('shadow-color').value = p.shadowColor;
+        if (p.shadowBlur)  { document.getElementById('shadow-blur').value = p.shadowBlur; document.getElementById('shadow-blur-display').textContent = p.shadowBlur + 'px'; }
+        if (p.shadowOffset){ document.getElementById('shadow-offset').value = p.shadowOffset; document.getElementById('shadow-offset-display').textContent = p.shadowOffset + 'px'; }
+        if (p.light != null){ if (p.light) { document.body.classList.add('light'); document.getElementById('theme-toggle').textContent = 'DARK'; } }
+        if (p.font && FONT_LIST.includes(p.font)) { document.getElementById('font-select').value = p.font; document.getElementById('select-btn').textContent = p.font; document.querySelectorAll('.dropdown-item').forEach(el => el.classList.toggle('selected', el.dataset.font === p.font)); }
+      } catch(e) {}
+    }
+
+    // Auto-save prefs on relevant changes
+    ['font-size-slider','zoom-slider','block-gap-slider','png-padding-slider',
+     'preview-bg','preview-text','png-bg','png-text','png-transparent',
+     'png-gradient','grad-from','grad-to','png-shadow','shadow-color',
+     'shadow-blur','shadow-offset'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', savePrefs);
+    });
+    document.getElementById('font-select').addEventListener('change', savePrefs);
+
     window.addEventListener('load', () => {
       loadBookmarks();
       loadRecentFonts();
-      // Auto light mode if system prefers light
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-        document.body.classList.add('light');
-        document.getElementById('theme-toggle').textContent = 'DARK';
-      }
+      loadPrefs();
+      // URL hash overrides font/text from prefs
       if (window.location.hash) {
         try {
           const params = new URLSearchParams(window.location.hash.slice(1));
           if (params.get('text')) document.getElementById('text-input').value = params.get('text');
-          if (params.get('font')) document.getElementById('font-select').value = params.get('font');
+          if (params.get('font')) {
+            const f = params.get('font');
+            if (FONT_LIST.includes(f)) { document.getElementById('font-select').value = f; document.getElementById('select-btn').textContent = f; }
+          }
         } catch (e) {}
+      }
+      // System color scheme (only if no prefs saved)
+      if (!localStorage.getItem('ascii-prefs')) {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          document.body.classList.add('light');
+          document.getElementById('theme-toggle').textContent = 'DARK';
+        }
       }
       generate();
     });
