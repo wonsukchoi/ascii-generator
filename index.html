@@ -769,6 +769,7 @@
     .color-util-btn:hover { background: #c9a96e22; opacity: 1; }
     body.light .color-util-btn { border-color: #7a5c1e55; color: #7a5c1e; }
     body.light .color-util-btn:hover { background: #7a5c1e22; }
+    body.light #fill-char-input { border-color: #7a5c1e55; color: #7a5c1e; }
 
     body.light #bm-name-input { border-color: #7a5c1e44; color: #7a5c1e; }
     body.light #bm-name-input::placeholder { color: #7a5c1e44; }
@@ -994,6 +995,33 @@
     <span id="line-height-display">1.15</span>
   </div>
 
+  <div class="font-size-row">
+    <label>LETTER SPC</label>
+    <div id="lspc-btns" style="display:flex;gap:4px;">
+      <button class="scale-btn active" data-lspc="0" onclick="setLetterSpacing(0)" title="No extra spacing">0</button>
+      <button class="scale-btn" data-lspc="1" onclick="setLetterSpacing(1)" title="1 space between chars">+1</button>
+      <button class="scale-btn" data-lspc="2" onclick="setLetterSpacing(2)" title="2 spaces between chars">+2</button>
+      <button class="scale-btn" data-lspc="3" onclick="setLetterSpacing(3)" title="3 spaces between chars">+3</button>
+    </div>
+    <label style="margin-left:20px;">WRAP WIDTH</label>
+    <input type="range" id="wrap-width-slider" min="0" max="60" value="0" step="5" oninput="updateWrapWidth(this.value)">
+    <span id="wrap-width-display">OFF</span>
+  </div>
+
+  <div class="font-size-row">
+    <label>CASE</label>
+    <div style="display:flex;gap:4px;">
+      <button class="scale-btn" onclick="transformCase('upper')" title="Transform input to UPPERCASE">UPPER</button>
+      <button class="scale-btn" onclick="transformCase('lower')" title="Transform input to lowercase">lower</button>
+      <button class="scale-btn" onclick="transformCase('title')" title="Transform input to Title Case">Title</button>
+      <button class="scale-btn" onclick="transformCase('toggle')" title="Toggle each character's case">tOGGLE</button>
+    </div>
+    <label style="margin-left:20px;">SPACE FILL</label>
+    <input type="text" id="fill-char-input" maxlength="1" placeholder="·" title="Replace spaces in ASCII art with this character"
+           oninput="updateFillChar(this.value)"
+           style="width:36px;background:transparent;border:1px solid #c9a96e55;color:#c9a96e;font-family:'Courier New',monospace;font-size:0.9rem;padding:4px 8px;outline:none;text-align:center;">
+  </div>
+
   <div class="export-options" style="margin-bottom:10px;">
     <div class="color-field">
       <label>PNG SCALE</label>
@@ -1001,6 +1029,7 @@
         <button class="scale-btn active" data-scale="1" onclick="setScale(1)">1×</button>
         <button class="scale-btn" data-scale="2" onclick="setScale(2)">2×</button>
         <button class="scale-btn" data-scale="3" onclick="setScale(3)">3×</button>
+        <button class="scale-btn" data-scale="4" onclick="setScale(4)">4×</button>
       </div>
     </div>
     <div class="color-field">
@@ -1082,6 +1111,10 @@
         <input type="checkbox" id="png-shadow" onchange="toggleShadow(this.checked)">
         <span>glow</span>
       </label>
+      <label class="transparent-label" title="Add stroke outline to PNG text">
+        <input type="checkbox" id="png-outline" onchange="toggleOutline(this.checked)">
+        <span>outline</span>
+      </label>
     </div>
   </div>
 
@@ -1099,6 +1132,18 @@
       <label>OFFSET</label>
       <input type="range" id="shadow-offset" min="0" max="16" value="0" oninput="document.getElementById('shadow-offset-display').textContent=this.value+'px'">
       <span id="shadow-offset-display">0px</span>
+    </div>
+  </div>
+
+  <div class="export-options" id="outline-row" style="display:none">
+    <div class="color-field">
+      <label>OUTLINE COLOR</label>
+      <input type="color" id="outline-color" value="#000000" title="Outline/stroke color">
+    </div>
+    <div class="color-field">
+      <label>STROKE WIDTH</label>
+      <input type="range" id="outline-width" min="1" max="8" value="2" oninput="document.getElementById('outline-width-display').textContent=this.value+'px'">
+      <span id="outline-width-display">2px</span>
     </div>
   </div>
 
@@ -2668,6 +2713,63 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     // Fonts pre-loaded offline — no CDN needed
 
     let currentArt = '';
+    let letterSpacing = 0;
+    let wrapWidth = 0;
+    let fillChar = '';
+
+    function applyFill(art) {
+      if (!fillChar) return art;
+      // Replace space chars only (preserve newlines)
+      return art.split('\n').map(line => line.replace(/ /g, fillChar)).join('\n');
+    }
+
+    function updateFillChar(val) {
+      fillChar = val.slice(-1); // only the last typed char
+      if (val.length > 1) document.getElementById('fill-char-input').value = fillChar;
+      generate();
+      savePrefs();
+    }
+
+    function transformCase(mode) {
+      const input = document.getElementById('text-input');
+      const t = input.value;
+      switch (mode) {
+        case 'upper':  input.value = t.toUpperCase(); break;
+        case 'lower':  input.value = t.toLowerCase(); break;
+        case 'title':  input.value = t.replace(/\b\w/g, c => c.toUpperCase()); break;
+        case 'toggle': input.value = t.split('').map(c => c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase()).join(''); break;
+      }
+      generate();
+    }
+
+    function wordWrap(text, maxWidth) {
+      if (!maxWidth || !text.trim()) return [text];
+      const words = text.split(' ');
+      const lines = [];
+      let cur = '';
+      for (const w of words) {
+        if (cur && (cur + ' ' + w).length > maxWidth) { lines.push(cur); cur = w; }
+        else cur = cur ? cur + ' ' + w : w;
+      }
+      if (cur) lines.push(cur);
+      return lines.length ? lines : [text];
+    }
+
+    function setLetterSpacing(n) {
+      letterSpacing = n;
+      document.querySelectorAll('#lspc-btns .scale-btn').forEach(btn =>
+        btn.classList.toggle('active', +btn.dataset.lspc === n)
+      );
+      generate();
+      savePrefs();
+    }
+
+    function updateWrapWidth(val) {
+      wrapWidth = parseInt(val, 10);
+      document.getElementById('wrap-width-display').textContent = wrapWidth > 0 ? wrapWidth + ' ch' : 'OFF';
+      generate();
+      savePrefs();
+    }
 
     function figletAsync(text, font, layout) {
       return new Promise((resolve, reject) => {
@@ -2687,13 +2789,15 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       output.textContent = '...';
       status.textContent = `Loading font: ${font}`;
 
-      const inputLines = raw.split('\n');
+      let inputLines = raw.split('\n');
+      if (wrapWidth > 0) inputLines = inputLines.flatMap(line => wordWrap(line, wrapWidth));
+      if (letterSpacing > 0) inputLines = inputLines.map(line => line.split('').join(' '.repeat(letterSpacing)));
 
       try {
         const rendered = await Promise.all(
           inputLines.map(line => line.trim() ? figletAsync(line, font, currentLayout) : Promise.resolve(''))
         );
-        currentArt = applyFlip(applyBorder(alignArt(rendered.join('\n'.repeat(blockGap + 1)), currentAlign), borderStyle));
+        currentArt = applyFill(applyFlip(applyBorder(alignArt(rendered.join('\n'.repeat(blockGap + 1)), currentAlign), borderStyle)));
         output.textContent = currentArt;
         const artLines = currentArt.split('\n');
         const lineCount = artLines.length;
@@ -2777,6 +2881,10 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
 
     function toggleShadow(checked) {
       document.getElementById('shadow-row').style.display = checked ? 'flex' : 'none';
+    }
+
+    function toggleOutline(checked) {
+      document.getElementById('outline-row').style.display = checked ? 'flex' : 'none';
     }
 
     function setGradDir(dir) {
@@ -3185,6 +3293,15 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
 
       ctx.font = `${fontSize}px "Courier New", Courier, monospace`;
       ctx.textBaseline = 'top';
+
+      // Stroke/outline pass first (appears behind fill)
+      if (document.getElementById('png-outline').checked) {
+        const sw = parseInt(document.getElementById('outline-width').value, 10) * scale;
+        ctx.strokeStyle = document.getElementById('outline-color').value;
+        ctx.lineWidth = sw;
+        ctx.lineJoin = 'round';
+        lines.forEach((line, i) => ctx.strokeText(line, pad, pad + i * lineHeight));
+      }
 
       lines.forEach((line, i) => {
         ctx.fillText(line, pad, pad + i * lineHeight);
@@ -3692,6 +3809,9 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         font:       document.getElementById('font-select').value,
         flip:       flipMode,
         lineHeight: document.getElementById('line-height-slider').value,
+        letterSpacing,
+        wrapWidth,
+        fillChar,
       };
       localStorage.setItem('ascii-prefs', JSON.stringify(prefs));
     }
@@ -3727,6 +3847,9 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         if (p.font && FONT_LIST.includes(p.font)) { document.getElementById('font-select').value = p.font; document.getElementById('select-btn').textContent = p.font; document.querySelectorAll('.dropdown-item').forEach(el => el.classList.toggle('selected', el.dataset.font === p.font)); }
         if (p.flip != null) setFlipMode(p.flip);
         if (p.lineHeight) { document.getElementById('line-height-slider').value = p.lineHeight; updateLineHeight(p.lineHeight); }
+        if (p.letterSpacing != null) { setLetterSpacing(p.letterSpacing); }
+        if (p.wrapWidth != null) { document.getElementById('wrap-width-slider').value = p.wrapWidth; updateWrapWidth(p.wrapWidth); }
+        if (p.fillChar != null) { fillChar = p.fillChar; document.getElementById('fill-char-input').value = p.fillChar; }
       } catch(e) {}
     }
 
