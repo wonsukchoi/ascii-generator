@@ -887,6 +887,11 @@
           <input type="text" id="font-search" placeholder="search fonts..." autocomplete="off"
                  oninput="filterFonts(this.value)">
         </div>
+        <div id="recent-section" style="display:none">
+          <div class="export-section-label" style="padding:4px 14px 2px;font-size:0.6rem;">RECENT</div>
+          <div id="recent-items"></div>
+          <div style="border-top:1px solid #c9a96e22;margin:4px 0 0;"></div>
+        </div>
       </div>
       <div class="font-preview-panel" id="font-preview-panel">
         <div class="preview-label">PREVIEW</div>
@@ -2757,6 +2762,41 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       });
     })();
 
+    // ── Recent fonts ─────────────────────────────────────────────────────
+    let recentFonts = [];
+
+    function loadRecentFonts() {
+      try {
+        const stored = localStorage.getItem('ascii-recent-fonts');
+        if (stored) recentFonts = JSON.parse(stored);
+      } catch(e) {}
+      renderRecentSection();
+    }
+
+    function pushRecentFont(font) {
+      recentFonts = [font, ...recentFonts.filter(f => f !== font)].slice(0, 5);
+      localStorage.setItem('ascii-recent-fonts', JSON.stringify(recentFonts));
+      renderRecentSection();
+    }
+
+    function renderRecentSection() {
+      const section  = document.getElementById('recent-section');
+      const container = document.getElementById('recent-items');
+      if (!recentFonts.length) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      container.innerHTML = '';
+      recentFonts.forEach(font => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item recent-item';
+        item.dataset.font = font;
+        item.textContent = font;
+        item.addEventListener('mouseenter', () => showFontPreview(font));
+        item.addEventListener('mouseleave', hideFontPreview);
+        item.addEventListener('click', () => selectFont(font));
+        container.appendChild(item);
+      });
+    }
+
     const previewCache = {};
 
     async function showFontPreview(font) {
@@ -2784,6 +2824,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       document.querySelectorAll('.dropdown-item').forEach(el =>
         el.classList.toggle('selected', el.dataset.font === font)
       );
+      pushRecentFont(font);
       closeDropdown();
       // Close all-fonts overlay if open
       const overlay = document.getElementById('all-fonts-overlay');
@@ -2793,7 +2834,17 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     function filterFonts(query) {
       const q = query.toLowerCase();
       let anyVisible = false;
-      document.querySelectorAll('.dropdown-item').forEach(el => {
+      // Filter recent items
+      let anyRecentVisible = false;
+      document.querySelectorAll('.recent-item').forEach(el => {
+        const match = !q || el.dataset.font.toLowerCase().includes(q);
+        el.classList.toggle('hidden', !match);
+        if (match) anyRecentVisible = true;
+      });
+      document.getElementById('recent-section').style.display =
+        recentFonts.length && anyRecentVisible ? 'block' : 'none';
+      // Filter main items
+      document.querySelectorAll('.dropdown-item:not(.recent-item)').forEach(el => {
         const match = el.dataset.font.toLowerCase().includes(q);
         el.classList.toggle('hidden', !match);
         if (match) anyVisible = true;
@@ -3408,6 +3459,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     // Read URL hash on load and pre-populate inputs
     window.addEventListener('load', () => {
       loadBookmarks();
+      loadRecentFonts();
       if (window.location.hash) {
         try {
           const params = new URLSearchParams(window.location.hash.slice(1));
