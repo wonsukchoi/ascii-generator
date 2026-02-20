@@ -952,6 +952,7 @@
         <button class="export-item" onclick="saveTxt()">TXT</button>
         <button class="export-item" onclick="saveAnsi()">ANSI</button>
         <button class="export-item" onclick="saveSvg()">SVG</button>
+        <button class="export-item" onclick="exportAllFonts()">All Fonts TXT</button>
         <button class="export-item" onclick="saveHtml()">HTML</button>
         <button class="export-item" onclick="printArt()">Print</button>
         <div class="export-divider"></div>
@@ -2953,8 +2954,22 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       document.getElementById('gradient-row').style.display = checked ? 'flex' : 'none';
     }
 
+    function updatePreviewShadow() {
+      const enabled = document.getElementById('png-shadow').checked;
+      const output  = document.getElementById('ascii-output');
+      if (enabled) {
+        const color  = document.getElementById('shadow-color').value;
+        const blur   = document.getElementById('shadow-blur').value;
+        const offset = document.getElementById('shadow-offset').value;
+        output.style.textShadow = `${offset}px ${offset}px ${blur}px ${color}, 0 0 ${+blur * 2}px ${color}`;
+      } else {
+        output.style.textShadow = '';
+      }
+    }
+
     function toggleShadow(checked) {
       document.getElementById('shadow-row').style.display = checked ? 'flex' : 'none';
+      updatePreviewShadow();
     }
 
     function toggleOutline(checked) {
@@ -3171,6 +3186,32 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     ];
 
     let activePreset = 'Gold';
+    let customPresets = [];
+
+    function loadCustomPresets() {
+      try { customPresets = JSON.parse(localStorage.getItem('ascii-custom-presets') || '[]'); } catch(e) { customPresets = []; }
+    }
+
+    function saveCustomPresets() {
+      localStorage.setItem('ascii-custom-presets', JSON.stringify(customPresets));
+    }
+
+    function addCustomPreset() {
+      if (customPresets.length >= 4) { flash('MAX 4 CUSTOM'); return; }
+      const bg   = document.getElementById('preview-bg').value;
+      const text = document.getElementById('preview-text').value;
+      const name = 'My' + (customPresets.length + 1);
+      customPresets.push({ name, bg, text });
+      saveCustomPresets();
+      buildPresetSwatches();
+      flash('PRESET SAVED!');
+    }
+
+    function deleteCustomPreset(name) {
+      customPresets = customPresets.filter(p => p.name !== name);
+      saveCustomPresets();
+      buildPresetSwatches();
+    }
 
     function randomFont() {
       const current = document.getElementById('font-select').value;
@@ -3180,7 +3221,11 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
 
     function buildPresetSwatches() {
       const container = document.getElementById('preset-swatches');
-      COLOR_PRESETS.forEach(p => {
+      container.innerHTML = '';
+
+      const makeSwatch = (p, deletable) => {
+        const wrap = document.createElement('span');
+        wrap.style.cssText = 'position:relative;display:inline-flex;';
         const btn = document.createElement('button');
         btn.className = 'preset-swatch' + (p.name === activePreset ? ' active' : '');
         btn.title = p.name;
@@ -3190,8 +3235,35 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         btn.style.borderColor = p.text + '66';
         btn.textContent = 'A';
         btn.addEventListener('click', () => applyPreset(p));
-        container.appendChild(btn);
-      });
+        wrap.appendChild(btn);
+        if (deletable) {
+          const del = document.createElement('button');
+          del.textContent = '×';
+          del.title = 'Delete custom preset';
+          del.style.cssText = 'position:absolute;top:-5px;right:-5px;background:#c9a96e;border:none;border-radius:50%;width:13px;height:13px;font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1;color:#111;font-weight:bold;';
+          del.addEventListener('click', e => { e.stopPropagation(); deleteCustomPreset(p.name); });
+          wrap.addEventListener('mouseenter', () => del.style.display = 'flex');
+          wrap.addEventListener('mouseleave', () => del.style.display = 'none');
+          wrap.appendChild(del);
+        }
+        return wrap;
+      };
+
+      COLOR_PRESETS.forEach(p => container.appendChild(makeSwatch(p, false)));
+      customPresets.forEach(p => container.appendChild(makeSwatch(p, true)));
+
+      // "+" button to save current colors
+      if (customPresets.length < 4) {
+        const addBtn = document.createElement('button');
+        addBtn.className = 'preset-swatch';
+        addBtn.title = 'Save current preview colors as custom preset (up to 4)';
+        addBtn.textContent = '+';
+        addBtn.style.cssText = 'border-style:dashed;opacity:0.45;font-size:18px;line-height:1;';
+        addBtn.addEventListener('click', addCustomPreset);
+        addBtn.addEventListener('mouseenter', () => addBtn.style.opacity = '1');
+        addBtn.addEventListener('mouseleave', () => addBtn.style.opacity = '0.45');
+        container.appendChild(addBtn);
+      }
     }
 
     function applyPreset(p) {
@@ -3208,8 +3280,10 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       document.querySelectorAll('.preset-swatch').forEach(s =>
         s.classList.toggle('active', s.dataset.preset === p.name)
       );
+      savePrefs();
     }
 
+    loadCustomPresets();
     buildPresetSwatches();
 
     function toggleTheme() {
@@ -3522,6 +3596,29 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       navigator.clipboard.writeText(ansi).then(() => flash('COPIED ANSI!'));
     }
 
+    async function exportAllFonts() {
+      closeExportMenu();
+      if (!currentArt) return;
+      const raw = document.getElementById('text-input').value || 'HELLO';
+      flash('RENDERING ALL...');
+      let result = '';
+      for (const f of FONT_LIST) {
+        try {
+          const art = await figletAsync(raw, f, currentLayout);
+          const rule = '─'.repeat(52);
+          result += `${rule}\n  ${f}\n${rule}\n${art}\n\n`;
+        } catch(e) {}
+      }
+      const name = (document.getElementById('text-input').value.trim() || 'ascii').toLowerCase().replace(/\s+/g,'-');
+      const blob = new Blob([result], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.download = `${name}-all-fonts.txt`;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+      flash('SAVED ALL FONTS!');
+    }
+
     function saveAnsi() {
       closeExportMenu();
       const ansi = buildAnsi();
@@ -3667,6 +3764,21 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     }
 
     document.getElementById('text-input').addEventListener('input', () => { if (!restoringHistory) debouncedGenerate(); });
+
+    // Tab key inserts 2 spaces instead of focusing next element
+    document.getElementById('text-input').addEventListener('keydown', e => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const ta = e.target, s = ta.selectionStart, end = ta.selectionEnd;
+        ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(end);
+        ta.setSelectionRange(s + 2, s + 2);
+      }
+    });
+
+    // Live preview shadow when shadow inputs change
+    ['shadow-color','shadow-blur','shadow-offset'].forEach(id =>
+      document.getElementById(id).addEventListener('input', updatePreviewShadow)
+    );
 
     // Keyboard shortcuts
     document.addEventListener('keydown', e => {
