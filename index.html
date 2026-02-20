@@ -414,6 +414,37 @@
     .dropdown-list::-webkit-scrollbar-track { background: #111; }
     .dropdown-list::-webkit-scrollbar-thumb { background: #c9a96e44; }
 
+    #history-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .hist-btn {
+      background: transparent;
+      border: 1px solid #c9a96e55;
+      color: #c9a96e;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      cursor: pointer;
+    }
+
+    .hist-btn:hover { background: #c9a96e22; }
+    .hist-btn:disabled { opacity: 0.2; cursor: default; }
+
+    #history-pos {
+      font-size: 0.78rem;
+      opacity: 0.5;
+      letter-spacing: 1px;
+      min-width: 48px;
+      text-align: center;
+    }
+
+    body.light .hist-btn { border-color: #7a5c1e55; color: #7a5c1e; }
+    body.light .hist-btn:hover { background: #7a5c1e22; }
+
     #shortcuts {
       display: flex;
       gap: 20px;
@@ -730,6 +761,12 @@
 
   <div id="output-wrapper">
     <pre id="ascii-output">Loading fonts...</pre>
+  </div>
+
+  <div id="history-nav" style="display:none">
+    <button class="hist-btn" onclick="navigateHistory(-1)">←</button>
+    <span id="history-pos"></span>
+    <button class="hist-btn" onclick="navigateHistory(1)">→</button>
   </div>
 
   <div id="status"></div>
@@ -2291,6 +2328,7 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
         status.textContent = `Font: ${font} · ${lineCount} lines · ${maxChars} chars wide`;
         const params = new URLSearchParams({ text: raw, font });
         history.replaceState(null, '', '#' + params.toString());
+        if (!restoringHistory) pushHistory({ text: raw, font, layout: currentLayout, align: currentAlign, art: currentArt });
       } catch (err) {
         output.textContent = `Error: ${err.message}`;
         status.textContent = '';
@@ -2504,6 +2542,53 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       generate();
     }
 
+    // Generation history
+    const artHistory = [];
+    let historyIdx = -1;
+    let restoringHistory = false;
+
+    function pushHistory(entry) {
+      // Trim forward history if we're not at the end
+      if (historyIdx < artHistory.length - 1) artHistory.splice(historyIdx + 1);
+      // Deduplicate: skip if identical to last entry
+      const last = artHistory[artHistory.length - 1];
+      if (last && last.text === entry.text && last.font === entry.font &&
+          last.layout === entry.layout && last.align === entry.align) return;
+      artHistory.push(entry);
+      if (artHistory.length > 10) artHistory.shift();
+      historyIdx = artHistory.length - 1;
+      updateHistoryNav();
+    }
+
+    function navigateHistory(dir) {
+      const next = historyIdx + dir;
+      if (next < 0 || next >= artHistory.length) return;
+      historyIdx = next;
+      const entry = artHistory[historyIdx];
+
+      restoringHistory = true;
+      document.getElementById('text-input').value = entry.text;
+      selectFont(entry.font);
+      setLayout(entry.layout);
+      setAlign(entry.align);
+      currentArt = entry.art;
+      document.getElementById('ascii-output').textContent = entry.art;
+      restoringHistory = false;
+
+      const artLines = entry.art.split('\n');
+      document.getElementById('status').textContent =
+        `Font: ${entry.font} · ${artLines.length} lines · ${Math.max(...artLines.map(l => l.length))} chars wide`;
+      updateHistoryNav();
+    }
+
+    function updateHistoryNav() {
+      const nav = document.getElementById('history-nav');
+      nav.style.display = artHistory.length > 1 ? 'flex' : 'none';
+      document.getElementById('history-pos').textContent = `${historyIdx + 1} / ${artHistory.length}`;
+      document.querySelector('.hist-btn:first-child').disabled = historyIdx === 0;
+      document.querySelector('.hist-btn:last-child').disabled  = historyIdx === artHistory.length - 1;
+    }
+
     let currentAlign = 'left';
 
     function alignArt(art, align) {
@@ -2691,7 +2776,7 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       debounceTimer = setTimeout(generate, 300);
     }
 
-    document.getElementById('text-input').addEventListener('input', debouncedGenerate);
+    document.getElementById('text-input').addEventListener('input', () => { if (!restoringHistory) debouncedGenerate(); });
 
     // Keyboard shortcuts
     document.addEventListener('keydown', e => {
@@ -2703,7 +2788,7 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); }
     });
 
-    document.getElementById('font-select').addEventListener('change', generate);
+    document.getElementById('font-select').addEventListener('change', () => { if (!restoringHistory) generate(); });
 
     // Read URL hash on load and pre-populate inputs
     window.addEventListener('load', () => {
