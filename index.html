@@ -220,6 +220,34 @@
       border: none;
     }
 
+    .transparent-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.78rem;
+      letter-spacing: 1px;
+      opacity: 0.6;
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .transparent-label:hover {
+      opacity: 1;
+    }
+
+    .transparent-label input[type="checkbox"] {
+      accent-color: #c9a96e;
+      cursor: pointer;
+      width: 13px;
+      height: 13px;
+    }
+
+    input[type="color"].disabled {
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
     /* Scrollbar */
     #output-wrapper::-webkit-scrollbar {
       height: 4px;
@@ -277,6 +305,10 @@
     <div class="color-field">
       <label>PNG BG</label>
       <input type="color" id="png-bg" value="#111111" title="PNG background color">
+      <label class="transparent-label" title="Transparent background">
+        <input type="checkbox" id="png-transparent" onchange="toggleTransparent(this.checked)">
+        <span>transparent</span>
+      </label>
     </div>
     <div class="color-field">
       <label>PNG TEXT</label>
@@ -1827,6 +1859,10 @@ figlet.parseFont("Standard", "flf2a$ 6 5 16 15 13 0 24463 229\nStandard by Glenn
       navigator.clipboard.writeText(currentArt).then(() => flash('COPIED TEXT!'));
     }
 
+    function toggleTransparent(checked) {
+      document.getElementById('png-bg').classList.toggle('disabled', checked);
+    }
+
     function buildCanvas() {
       if (!currentArt) return null;
       const fontSize = parseInt(document.getElementById('font-size-slider').value, 10);
@@ -1843,12 +1879,15 @@ figlet.parseFont("Standard", "flf2a$ 6 5 16 15 13 0 24463 229\nStandard by Glenn
       canvas.width  = Math.ceil(maxWidth) + pad * 2;
       canvas.height = lines.length * lineHeight + pad * 2;
 
-      const bgColor   = document.getElementById('png-bg').value;
-      const textColor = document.getElementById('png-text').value;
+      const transparent = document.getElementById('png-transparent').checked;
+      const bgColor     = document.getElementById('png-bg').value;
+      const textColor   = document.getElementById('png-text').value;
 
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (!transparent) {
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
 
       ctx.fillStyle = textColor;
       ctx.font = `${fontSize}px "Courier New", Courier, monospace`;
