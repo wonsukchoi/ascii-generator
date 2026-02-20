@@ -748,6 +748,30 @@
     body.light .bm-item-name { color: #7a5c1e; }
     body.light .bm-del-btn { color: #7a5c1e; }
     body.light .bm-empty { color: #7a5c1e; }
+
+    /* Mobile responsive */
+    @media (max-width: 640px) {
+      body { padding: 32px 14px; }
+
+      .controls { gap: 8px; }
+
+      .select-btn { min-width: 120px; }
+
+      .font-size-row {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .font-size-row label { min-width: 80px; }
+      .font-size-row input[type="range"] { max-width: none; flex: 1; min-width: 80px; }
+
+      .export-options { flex-wrap: wrap; gap: 12px; }
+
+      .font-preview-panel { display: none !important; }
+
+      #theme-toggle { padding: 5px 10px; font-size: 0.65rem; }
+
+      #shortcuts { display: none; }
+    }
   </style>
 </head>
 <body>
