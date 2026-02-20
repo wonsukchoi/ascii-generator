@@ -251,6 +251,29 @@
       pointer-events: none;
     }
 
+    .scale-btn {
+      background: transparent;
+      border: 1px solid #c9a96e55;
+      color: #c9a96e;
+      padding: 5px 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: background 0.15s;
+    }
+
+    .scale-btn:hover {
+      background: #c9a96e11;
+      opacity: 1;
+    }
+
+    .scale-btn.active {
+      background: #c9a96e22;
+      border-color: #c9a96e;
+      opacity: 1;
+    }
+
     /* Scrollbar */
     #output-wrapper::-webkit-scrollbar {
       height: 4px;
@@ -312,6 +335,17 @@
     <label style="margin-left:20px;">PNG PADDING</label>
     <input type="range" id="png-padding-slider" min="0" max="120" value="32" oninput="document.getElementById('png-padding-display').textContent = this.value + 'px'">
     <span id="png-padding-display">32px</span>
+  </div>
+
+  <div class="export-options" style="margin-bottom:10px;">
+    <div class="color-field">
+      <label>PNG SCALE</label>
+      <div id="scale-btns" style="display:flex;gap:4px;">
+        <button class="scale-btn active" data-scale="1" onclick="setScale(1)">1×</button>
+        <button class="scale-btn" data-scale="2" onclick="setScale(2)">2×</button>
+        <button class="scale-btn" data-scale="3" onclick="setScale(3)">3×</button>
+      </div>
+    </div>
   </div>
 
   <div class="export-options">
@@ -1914,12 +1948,22 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       document.getElementById('png-bg').classList.toggle('disabled', checked);
     }
 
+    let pngScale = 1;
+
+    function setScale(s) {
+      pngScale = s;
+      document.querySelectorAll('.scale-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.scale) === s);
+      });
+    }
+
     function buildCanvas() {
       if (!currentArt) return null;
-      const fontSize = parseInt(document.getElementById('font-size-slider').value, 10);
+      const scale      = pngScale;
+      const fontSize   = parseInt(document.getElementById('font-size-slider').value, 10) * scale;
       const lineHeight = Math.ceil(fontSize * 1.15);
-      const pad = parseInt(document.getElementById('png-padding-slider').value, 10);
-      const lines = currentArt.split('\n');
+      const pad        = parseInt(document.getElementById('png-padding-slider').value, 10) * scale;
+      const lines      = currentArt.split('\n');
 
       // Measure max line width using an offscreen canvas
       const measure = document.createElement('canvas').getContext('2d');
