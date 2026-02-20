@@ -1018,6 +1018,27 @@
         <input type="checkbox" id="png-gradient" onchange="toggleGradient(this.checked)">
         <span>gradient</span>
       </label>
+      <label class="transparent-label" title="Add glow/shadow to PNG text">
+        <input type="checkbox" id="png-shadow" onchange="toggleShadow(this.checked)">
+        <span>glow</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="export-options" id="shadow-row" style="display:none">
+    <div class="color-field">
+      <label>GLOW COLOR</label>
+      <input type="color" id="shadow-color" value="#c9a96e">
+    </div>
+    <div class="color-field">
+      <label>BLUR</label>
+      <input type="range" id="shadow-blur" min="0" max="30" value="12" oninput="document.getElementById('shadow-blur-display').textContent=this.value+'px'">
+      <span id="shadow-blur-display">12px</span>
+    </div>
+    <div class="color-field">
+      <label>OFFSET</label>
+      <input type="range" id="shadow-offset" min="0" max="16" value="0" oninput="document.getElementById('shadow-offset-display').textContent=this.value+'px'">
+      <span id="shadow-offset-display">0px</span>
     </div>
   </div>
 
@@ -2675,6 +2696,10 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       document.getElementById('gradient-row').style.display = checked ? 'flex' : 'none';
     }
 
+    function toggleShadow(checked) {
+      document.getElementById('shadow-row').style.display = checked ? 'flex' : 'none';
+    }
+
     function setGradDir(dir) {
       gradDir = dir;
       document.querySelectorAll('#grad-h-btn, #grad-v-btn').forEach(btn =>
@@ -3005,12 +3030,25 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       } else {
         ctx.fillStyle = textColor;
       }
+      if (document.getElementById('png-shadow').checked) {
+        ctx.shadowColor   = document.getElementById('shadow-color').value;
+        ctx.shadowBlur    = parseInt(document.getElementById('shadow-blur').value, 10) * scale;
+        const off = parseInt(document.getElementById('shadow-offset').value, 10) * scale;
+        ctx.shadowOffsetX = off;
+        ctx.shadowOffsetY = off;
+      }
+
       ctx.font = `${fontSize}px "Courier New", Courier, monospace`;
       ctx.textBaseline = 'top';
 
       lines.forEach((line, i) => {
         ctx.fillText(line, pad, pad + i * lineHeight);
       });
+
+      // Reset shadow for clean canvas
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = ctx.shadowOffsetY = 0;
 
       return canvas;
     }
