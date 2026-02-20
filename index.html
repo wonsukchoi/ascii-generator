@@ -938,6 +938,7 @@
         <div class="export-section-label">COPY</div>
         <button class="export-item" onclick="copyLink()">Link <span class="export-hint">⌘⇧L</span></button>
         <button class="export-item" onclick="copyArt()">Text</button>
+        <button class="export-item" onclick="copyMarkdown()">Markdown</button>
         <button class="export-item" onclick="copyPng()">PNG <span class="export-hint">⌘⇧C</span></button>
         <button class="export-item" onclick="copySvg()">SVG</button>
         <button class="export-item" onclick="copyHtml()">HTML</button>
@@ -1122,6 +1123,7 @@
     <span><kbd>⌘</kbd><kbd>⇧</kbd><kbd>L</kbd> copy link</span>
     <span><kbd>esc</kbd> close menu</span>
     <span><kbd>R</kbd> random font</span>
+    <span><kbd>F</kbd> focus mode</span>
     <span><kbd>⌘</kbd><kbd>←</kbd><kbd>→</kbd> history</span>
     <span>dbl-click output → copy text</span>
   </div>
@@ -2712,6 +2714,12 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       navigator.clipboard.writeText(currentArt).then(() => flash('COPIED TEXT!'));
     }
 
+    function copyMarkdown() {
+      closeExportMenu();
+      if (!currentArt) return;
+      navigator.clipboard.writeText('```\n' + currentArt + '\n```').then(() => flash('COPIED MD!'));
+    }
+
     function toggleTransparent(checked) {
       document.getElementById('png-bg').classList.toggle('disabled', checked);
     }
@@ -3379,6 +3387,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       if (mod && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); savePng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'l') { e.preventDefault(); copyLink(); }
       if (!mod && !e.shiftKey && e.key.toLowerCase() === 'r' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { randomFont(); }
+      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'f' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { toggleFocus(); }
       if (mod && e.key === 'ArrowLeft')                      { e.preventDefault(); navigateHistory(-1); }
       if (mod && e.key === 'ArrowRight')                     { e.preventDefault(); navigateHistory(1); }
       if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeAllFonts(); exitFocus(); }
@@ -3574,6 +3583,11 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     window.addEventListener('load', () => {
       loadBookmarks();
       loadRecentFonts();
+      // Auto light mode if system prefers light
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+        document.body.classList.add('light');
+        document.getElementById('theme-toggle').textContent = 'DARK';
+      }
       if (window.location.hash) {
         try {
           const params = new URLSearchParams(window.location.hash.slice(1));
