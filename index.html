@@ -313,6 +313,44 @@
 
     .dropdown-list.open { display: block; }
 
+    .font-search-wrap {
+      padding: 6px 8px;
+      border-bottom: 1px solid #c9a96e22;
+      position: sticky;
+      top: 0;
+      background: #111;
+      z-index: 1;
+    }
+
+    #font-search {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid #c9a96e44;
+      color: #c9a96e;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      padding: 4px 2px;
+      outline: none;
+    }
+
+    #font-search::placeholder { color: #c9a96e44; }
+
+    .dropdown-item.hidden { display: none; }
+
+    .no-font-results {
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      opacity: 0.4;
+      font-family: 'Courier New', monospace;
+      color: #c9a96e;
+    }
+
+    body.light .font-search-wrap { background: #fff; border-color: #7a5c1e22; }
+    body.light #font-search { border-color: #7a5c1e44; color: #7a5c1e; }
+    body.light #font-search::placeholder { color: #7a5c1e44; }
+    body.light .no-font-results { color: #7a5c1e; }
+
     .dropdown-item {
       padding: 8px 14px;
       cursor: pointer;
@@ -587,7 +625,12 @@
 
     <div class="custom-select" id="custom-select">
       <button class="select-btn" id="select-btn" onclick="toggleDropdown()">Banner3-D</button>
-      <div class="dropdown-list" id="dropdown-list"></div>
+      <div class="dropdown-list" id="dropdown-list">
+        <div class="font-search-wrap">
+          <input type="text" id="font-search" placeholder="search fonts..." autocomplete="off"
+                 oninput="filterFonts(this.value)">
+        </div>
+      </div>
       <div class="font-preview-panel" id="font-preview-panel">
         <div class="preview-label">PREVIEW</div>
         <pre id="font-preview-art">...</pre>
@@ -2337,12 +2380,42 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       closeDropdown();
     }
 
+    function filterFonts(query) {
+      const q = query.toLowerCase();
+      let anyVisible = false;
+      document.querySelectorAll('.dropdown-item').forEach(el => {
+        const match = el.dataset.font.toLowerCase().includes(q);
+        el.classList.toggle('hidden', !match);
+        if (match) anyVisible = true;
+      });
+      let noResults = document.getElementById('no-font-results');
+      if (!anyVisible) {
+        if (!noResults) {
+          noResults = document.createElement('div');
+          noResults.id = 'no-font-results';
+          noResults.className = 'no-font-results';
+          noResults.textContent = 'no matches';
+          document.getElementById('dropdown-list').appendChild(noResults);
+        }
+        noResults.style.display = 'block';
+      } else if (noResults) {
+        noResults.style.display = 'none';
+      }
+    }
+
     function toggleDropdown() {
-      document.getElementById('dropdown-list').classList.toggle('open');
+      const list = document.getElementById('dropdown-list');
+      list.classList.toggle('open');
+      if (list.classList.contains('open')) {
+        setTimeout(() => document.getElementById('font-search').focus(), 50);
+      }
     }
 
     function closeDropdown() {
       document.getElementById('dropdown-list').classList.remove('open');
+      const search = document.getElementById('font-search');
+      search.value = '';
+      filterFonts('');
       hideFontPreview();
     }
 
