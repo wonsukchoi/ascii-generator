@@ -772,6 +772,101 @@
 
       #shortcuts { display: none; }
     }
+
+    /* All Fonts modal */
+    #all-fonts-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 200;
+      overflow-y: auto;
+      padding: 40px 24px;
+    }
+
+    #all-fonts-overlay.open { display: block; }
+
+    #all-fonts-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 960px;
+      margin: 0 auto 28px;
+    }
+
+    #all-fonts-title {
+      font-size: 0.8rem;
+      letter-spacing: 3px;
+      opacity: 0.5;
+    }
+
+    #all-fonts-close {
+      background: transparent;
+      border: 1px solid #c9a96e55;
+      color: #c9a96e;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      padding: 5px 14px;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+
+    #all-fonts-close:hover { background: #c9a96e22; }
+
+    #all-fonts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .af-card {
+      border: 1px solid #c9a96e22;
+      padding: 14px 16px 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .af-card:hover { border-color: #c9a96e88; background: #c9a96e08; }
+    .af-card.af-current { border-color: #c9a96e; }
+
+    .af-card-label {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      opacity: 0.4;
+      margin-bottom: 10px;
+    }
+
+    .af-card-art {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 4px;
+      line-height: 1.15;
+      white-space: pre;
+      color: #c9a96e;
+      overflow: hidden;
+      max-height: 80px;
+    }
+
+    .af-loading {
+      font-size: 0.7rem;
+      opacity: 0.3;
+      font-family: 'Courier New', monospace;
+      color: #c9a96e;
+    }
+
+    body.light #all-fonts-overlay { background: rgba(255,255,255,0.92); }
+    body.light #all-fonts-close { border-color: #7a5c1e55; color: #7a5c1e; }
+    body.light #all-fonts-close:hover { background: #7a5c1e22; }
+    body.light .af-card { border-color: #7a5c1e22; }
+    body.light .af-card:hover { border-color: #7a5c1e88; background: #7a5c1e08; }
+    body.light .af-card.af-current { border-color: #7a5c1e; }
+    body.light .af-card-label { color: #7a5c1e; }
+    body.light .af-card-art { color: #7a5c1e; }
+    body.light .af-loading { color: #7a5c1e; }
+    body.light #all-fonts-title { color: #7a5c1e; }
   </style>
 </head>
 <body>
@@ -800,6 +895,7 @@
     </div>
     <button class="btn" onclick="generate()">GENERATE</button>
     <button class="btn secondary" onclick="randomFont()" title="Random font">?</button>
+    <button class="btn secondary" onclick="openAllFonts()" title="Preview all fonts">ALL FONTS</button>
 
     <div class="export-dropdown" id="export-dropdown">
       <button class="btn secondary" onclick="toggleExportMenu()">EXPORT ▾</button>
@@ -2621,6 +2717,9 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         el.classList.toggle('selected', el.dataset.font === font)
       );
       closeDropdown();
+      // Close all-fonts overlay if open
+      const overlay = document.getElementById('all-fonts-overlay');
+      if (overlay && overlay.classList.contains('open')) closeAllFonts();
     }
 
     function filterFonts(query) {
@@ -3030,10 +3129,50 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       if (mod && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); copyPng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); savePng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'l') { e.preventDefault(); copyLink(); }
-      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); }
+      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeAllFonts(); }
     });
 
     document.getElementById('font-select').addEventListener('change', () => { if (!restoringHistory) generate(); });
+
+    // ── All Fonts ─────────────────────────────────────────────────────────
+    async function openAllFonts() {
+      const overlay = document.getElementById('all-fonts-overlay');
+      const grid    = document.getElementById('all-fonts-grid');
+      const currentFont = document.getElementById('font-select').value;
+      const raw = (document.getElementById('text-input').value.split('\n')[0] || 'Hello').slice(0, 12).trim() || 'Hello';
+
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      grid.innerHTML = FONT_LIST.map(f => `
+        <div class="af-card${f === currentFont ? ' af-current' : ''}" id="af-${CSS.escape(f)}" onclick="selectFont('${f.replace(/'/g,'\\\'')}')" title="Select ${f}">
+          <div class="af-card-label">${f}</div>
+          <pre class="af-card-art"><span class="af-loading">rendering...</span></pre>
+        </div>
+      `).join('');
+
+      // Render fonts lazily via IntersectionObserver
+      const obs = new IntersectionObserver(async (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          obs.unobserve(entry.target);
+          const fontName = entry.target.querySelector('.af-card-label').textContent;
+          const pre = entry.target.querySelector('.af-card-art');
+          try {
+            const art = await figletAsync(raw, fontName, 'default');
+            pre.textContent = art;
+          } catch(e) {
+            pre.textContent = '(error)';
+          }
+        }
+      }, { rootMargin: '200px' });
+
+      grid.querySelectorAll('.af-card').forEach(card => obs.observe(card));
+    }
+
+    function closeAllFonts() {
+      document.getElementById('all-fonts-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
 
     // ── Bookmarks ────────────────────────────────────────────────────────
     let bookmarks = [];
@@ -3153,5 +3292,14 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       generate();
     });
   </script>
+
+  <div id="all-fonts-overlay">
+    <div id="all-fonts-header">
+      <span id="all-fonts-title">ALL FONTS — click to select</span>
+      <button id="all-fonts-close" onclick="closeAllFonts()">✕ CLOSE</button>
+    </div>
+    <div id="all-fonts-grid"></div>
+  </div>
+
 </body>
 </html>
