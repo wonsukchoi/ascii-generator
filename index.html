@@ -641,6 +641,96 @@
     #output-wrapper::-webkit-scrollbar-thumb {
       background: #c9a96e44;
     }
+
+    /* Bookmarks dropdown */
+    .bm-save-row {
+      display: flex;
+      gap: 6px;
+      padding: 8px 10px;
+      align-items: center;
+    }
+
+    #bm-name-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid #c9a96e44;
+      color: #c9a96e;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      padding: 3px 2px;
+      outline: none;
+      min-width: 0;
+    }
+
+    #bm-name-input::placeholder { color: #c9a96e44; }
+
+    .bm-save-btn {
+      background: transparent;
+      border: 1px solid #c9a96e55;
+      color: #c9a96e;
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .bm-save-btn:hover { background: #c9a96e22; }
+
+    .bm-item {
+      display: flex;
+      align-items: center;
+      padding: 0 6px 0 14px;
+    }
+
+    .bm-item-name {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #c9a96e;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      padding: 6px 0;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 160px;
+    }
+
+    .bm-item-name:hover { opacity: 0.7; }
+
+    .bm-del-btn {
+      background: transparent;
+      border: none;
+      color: #c9a96e;
+      font-size: 0.7rem;
+      padding: 4px 6px;
+      cursor: pointer;
+      opacity: 0.3;
+      flex-shrink: 0;
+    }
+
+    .bm-del-btn:hover { opacity: 1; }
+
+    .bm-empty {
+      padding: 8px 14px 10px;
+      font-size: 0.75rem;
+      opacity: 0.35;
+      font-family: 'Courier New', monospace;
+      color: #c9a96e;
+    }
+
+    body.light #bm-name-input { border-color: #7a5c1e44; color: #7a5c1e; }
+    body.light #bm-name-input::placeholder { color: #7a5c1e44; }
+    body.light .bm-save-btn { border-color: #7a5c1e55; color: #7a5c1e; }
+    body.light .bm-save-btn:hover { background: #7a5c1e22; }
+    body.light .bm-item-name { color: #7a5c1e; }
+    body.light .bm-del-btn { color: #7a5c1e; }
+    body.light .bm-empty { color: #7a5c1e; }
   </style>
 </head>
 <body>
@@ -683,6 +773,19 @@
         <button class="export-item" onclick="savePng()">PNG <span class="export-hint">⌘⇧S</span></button>
         <button class="export-item" onclick="saveTxt()">TXT</button>
         <button class="export-item" onclick="saveSvg()">SVG</button>
+      </div>
+    </div>
+
+    <div class="export-dropdown" id="bm-dropdown">
+      <button class="btn secondary" onclick="toggleBmMenu()">☆ SAVED</button>
+      <div class="export-menu" id="bm-menu">
+        <div class="bm-save-row">
+          <input type="text" id="bm-name-input" placeholder="bookmark name..." maxlength="32" autocomplete="off"
+                 onkeydown="if(event.key==='Enter')saveBookmark()">
+          <button class="bm-save-btn" onclick="saveBookmark()">SAVE</button>
+        </div>
+        <div class="export-divider"></div>
+        <div id="bm-list"><div class="bm-empty">no bookmarks yet</div></div>
       </div>
     </div>
   </div>
@@ -2472,6 +2575,7 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
     document.addEventListener('click', e => {
       if (!document.getElementById('custom-select').contains(e.target)) closeDropdown();
       if (!document.getElementById('export-dropdown').contains(e.target)) closeExportMenu();
+      if (!document.getElementById('bm-dropdown').contains(e.target)) closeBmMenu();
     });
 
     const COLOR_PRESETS = [
@@ -2785,13 +2889,112 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       if (mod && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); copyPng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); savePng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'l') { e.preventDefault(); copyLink(); }
-      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); }
+      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); }
     });
 
     document.getElementById('font-select').addEventListener('change', () => { if (!restoringHistory) generate(); });
 
+    // ── Bookmarks ────────────────────────────────────────────────────────
+    let bookmarks = [];
+
+    function loadBookmarks() {
+      try {
+        const stored = localStorage.getItem('ascii-bookmarks');
+        if (stored) bookmarks = JSON.parse(stored);
+      } catch(e) {}
+      renderBookmarkList();
+    }
+
+    function persistBookmarks() {
+      localStorage.setItem('ascii-bookmarks', JSON.stringify(bookmarks));
+    }
+
+    function saveBookmark() {
+      const input = document.getElementById('bm-name-input');
+      const name = input.value.trim() || ('Bookmark ' + (bookmarks.length + 1));
+      const bm = {
+        id: Date.now(),
+        name,
+        text: document.getElementById('text-input').value,
+        font: document.getElementById('font-select').value,
+        layout: currentLayout,
+        align: currentAlign,
+        fontSize: parseInt(document.getElementById('font-size-slider').value, 10),
+        previewBg: document.getElementById('preview-bg').value,
+        previewText: document.getElementById('preview-text').value,
+        pngBg: document.getElementById('png-bg').value,
+        pngText: document.getElementById('png-text').value,
+        transparent: document.getElementById('png-transparent').checked,
+      };
+      bookmarks.unshift(bm);
+      if (bookmarks.length > 20) bookmarks.pop();
+      persistBookmarks();
+      input.value = '';
+      renderBookmarkList();
+      flash('SAVED!');
+    }
+
+    function deleteBookmark(id) {
+      bookmarks = bookmarks.filter(b => b.id !== id);
+      persistBookmarks();
+      renderBookmarkList();
+    }
+
+    function restoreBookmark(id) {
+      const bm = bookmarks.find(b => b.id === id);
+      if (!bm) return;
+      closeBmMenu();
+      restoringHistory = true;
+      document.getElementById('text-input').value = bm.text;
+      selectFont(bm.font);
+      setLayout(bm.layout);
+      setAlign(bm.align);
+      const fsSlider = document.getElementById('font-size-slider');
+      fsSlider.value = bm.fontSize;
+      updateFontSize(bm.fontSize);
+      document.getElementById('preview-bg').value = bm.previewBg;
+      document.getElementById('output-wrapper').style.background = bm.previewBg;
+      document.getElementById('preview-text').value = bm.previewText;
+      document.getElementById('ascii-output').style.color = bm.previewText;
+      document.getElementById('png-bg').value = bm.pngBg;
+      document.getElementById('png-text').value = bm.pngText;
+      if (bm.transparent !== undefined) {
+        document.getElementById('png-transparent').checked = bm.transparent;
+        toggleTransparent(bm.transparent);
+      }
+      restoringHistory = false;
+      generate();
+    }
+
+    function renderBookmarkList() {
+      const list = document.getElementById('bm-list');
+      if (bookmarks.length === 0) {
+        list.innerHTML = '<div class="bm-empty">no bookmarks yet</div>';
+        return;
+      }
+      list.innerHTML = bookmarks.map(bm => `
+        <div class="bm-item">
+          <button class="bm-item-name" onclick="restoreBookmark(${bm.id})" title="${bm.name.replace(/"/g,'&quot;')}">${bm.name}</button>
+          <button class="bm-del-btn" onclick="deleteBookmark(${bm.id})" title="Delete">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function toggleBmMenu() {
+      const menu = document.getElementById('bm-menu');
+      menu.classList.toggle('open');
+      if (menu.classList.contains('open')) {
+        setTimeout(() => document.getElementById('bm-name-input').focus(), 30);
+      }
+    }
+
+    function closeBmMenu() {
+      document.getElementById('bm-menu').classList.remove('open');
+    }
+
     // Read URL hash on load and pre-populate inputs
     window.addEventListener('load', () => {
+      loadBookmarks();
       if (window.location.hash) {
         try {
           const params = new URLSearchParams(window.location.hash.slice(1));
