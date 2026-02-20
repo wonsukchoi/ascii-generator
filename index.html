@@ -931,6 +931,8 @@
     </div>
     <button class="btn" onclick="generate()">GENERATE</button>
     <button class="btn secondary" onclick="randomFont()" title="Random font">?</button>
+    <button class="btn secondary" id="anim-btn" onclick="toggleAnimation()" title="Typewriter animation">▶ PLAY</button>
+    <button class="btn secondary" onclick="randomText()" title="Random text input">RANDOM</button>
     <button class="btn secondary" onclick="openAllFonts()" title="Preview all fonts">ALL FONTS</button>
 
     <div class="export-dropdown" id="export-dropdown">
@@ -952,6 +954,9 @@
         <button class="export-item" onclick="saveSvg()">SVG</button>
         <button class="export-item" onclick="saveHtml()">HTML</button>
         <button class="export-item" onclick="printArt()">Print</button>
+        <div class="export-divider"></div>
+        <div class="export-section-label">SHARE</div>
+        <button class="export-item" onclick="shareTwitter()">𝕏 / Twitter</button>
       </div>
     </div>
 
@@ -1115,6 +1120,10 @@
         <input type="checkbox" id="png-outline" onchange="toggleOutline(this.checked)">
         <span>outline</span>
       </label>
+      <label class="transparent-label" title="Add CRT scanline overlay to PNG">
+        <input type="checkbox" id="png-scanlines" onchange="toggleScanlines(this.checked)">
+        <span>scanlines</span>
+      </label>
     </div>
   </div>
 
@@ -1144,6 +1153,15 @@
       <label>STROKE WIDTH</label>
       <input type="range" id="outline-width" min="1" max="8" value="2" oninput="document.getElementById('outline-width-display').textContent=this.value+'px'">
       <span id="outline-width-display">2px</span>
+    </div>
+  </div>
+
+  <div class="export-options" id="scanline-row" style="display:none">
+    <div class="color-field">
+      <label>SCANLINE OPACITY</label>
+      <input type="range" id="scanline-opacity" min="0.05" max="0.7" value="0.25" step="0.05"
+             oninput="document.getElementById('scanline-opacity-display').textContent=Math.round(this.value*100)+'%'">
+      <span id="scanline-opacity-display">25%</span>
     </div>
   </div>
 
@@ -1184,6 +1202,7 @@
     <span><kbd>esc</kbd> close menu</span>
     <span><kbd>R</kbd> random font</span>
     <span><kbd>F</kbd> focus mode</span>
+    <span><kbd>P</kbd> play/stop</span>
     <span><kbd>⌘</kbd><kbd>←</kbd><kbd>→</kbd> history</span>
     <span>dbl-click output → copy text</span>
   </div>
@@ -2781,6 +2800,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     }
 
     async function generate() {
+      if (animTimer) stopAnimation();
       const raw  = document.getElementById('text-input').value || 'HELLO';
       const font = document.getElementById('font-select').value;
       const output = document.getElementById('ascii-output');
@@ -2811,6 +2831,60 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         output.textContent = `Error: ${err.message}`;
         status.textContent = '';
       }
+    }
+
+    // ── Typewriter animation ─────────────────────────────────────────────
+    let animTimer = null;
+
+    function typewriterPlay() {
+      if (!currentArt) return;
+      stopAnimation();
+      const output = document.getElementById('ascii-output');
+      const btn = document.getElementById('anim-btn');
+      const art = currentArt;
+      let i = 0;
+      btn.textContent = '■ STOP';
+      animTimer = setInterval(() => {
+        i = Math.min(i + 8, art.length);
+        output.textContent = art.slice(0, i);
+        if (i >= art.length) { stopAnimation(); btn.textContent = '▶ PLAY'; }
+      }, 16);
+    }
+
+    function stopAnimation() {
+      if (animTimer) { clearInterval(animTimer); animTimer = null; }
+      const btn = document.getElementById('anim-btn');
+      if (btn) btn.textContent = '▶ PLAY';
+      const output = document.getElementById('ascii-output');
+      if (currentArt) output.textContent = currentArt;
+    }
+
+    function toggleAnimation() {
+      if (animTimer) stopAnimation();
+      else typewriterPlay();
+    }
+
+    // ── Random text ──────────────────────────────────────────────────────
+    const RANDOM_PHRASES = [
+      'HELLO', 'WORLD', 'ASCII', 'RETRO', 'HACK', 'CYBER', 'NEON', 'GHOST',
+      'MATRIX', 'PIXEL', 'CODE', 'SUDO', 'ROOT', 'SHELL', 'BYTE', 'GLITCH',
+      'NOVA', 'ORBIT', 'PULSAR', 'VORTEX', 'SIGNAL', 'ECHO', 'VOID', 'APEX',
+      'TURBO', 'ULTRA', 'MEGA', 'HYPER', 'ZETA', 'FLUX', 'ROGUE', 'ZERO',
+    ];
+
+    function randomText() {
+      const pick = () => RANDOM_PHRASES[Math.floor(Math.random() * RANDOM_PHRASES.length)];
+      const count = Math.random() < 0.4 ? 2 : 1;
+      const lines = Array.from({ length: count }, pick);
+      document.getElementById('text-input').value = lines.join('\n');
+      generate();
+    }
+
+    // ── Social share ─────────────────────────────────────────────────────
+    function shareTwitter() {
+      const url = encodeURIComponent(window.location.href);
+      const text = encodeURIComponent('Check out my ASCII art! 🖥️');
+      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
     }
 
     function flash(msg) {
@@ -2885,6 +2959,10 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
 
     function toggleOutline(checked) {
       document.getElementById('outline-row').style.display = checked ? 'flex' : 'none';
+    }
+
+    function toggleScanlines(checked) {
+      document.getElementById('scanline-row').style.display = checked ? 'flex' : 'none';
     }
 
     function setGradDir(dir) {
@@ -3312,6 +3390,16 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       ctx.shadowBlur = 0;
       ctx.shadowOffsetX = ctx.shadowOffsetY = 0;
 
+      // CRT scanlines overlay
+      if (document.getElementById('png-scanlines').checked) {
+        const spacing = Math.max(2, Math.round(3 * scale));
+        const alpha   = parseFloat(document.getElementById('scanline-opacity').value);
+        ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+        for (let y = 0; y < canvas.height; y += spacing) {
+          ctx.fillRect(0, y, canvas.width, 1 * scale);
+        }
+      }
+
       return canvas;
     }
 
@@ -3589,6 +3677,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       if (mod && e.shiftKey && e.key.toLowerCase() === 'l') { e.preventDefault(); copyLink(); }
       if (!mod && !e.shiftKey && e.key.toLowerCase() === 'r' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { randomFont(); }
       if (!mod && !e.shiftKey && e.key.toLowerCase() === 'f' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { toggleFocus(); }
+      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'p' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { toggleAnimation(); }
       if (mod && e.key === 'ArrowLeft')                      { e.preventDefault(); navigateHistory(-1); }
       if (mod && e.key === 'ArrowRight')                     { e.preventDefault(); navigateHistory(1); }
       if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeAllFonts(); exitFocus(); }
