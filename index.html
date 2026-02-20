@@ -939,9 +939,14 @@
     <label class="transparent-label" title="Loop animation">
       <input type="checkbox" id="anim-loop"><span>loop</span>
     </label>
-    <button class="btn secondary" onclick="randomText()" title="Random text input">RANDOM</button>
-    <button class="btn secondary" onclick="openAllFonts()" title="Preview all fonts">ALL FONTS</button>
-    <button class="btn secondary" onclick="openHelp()" title="Keyboard shortcuts &amp; feature guide">HELP</button>
+    <div class="export-dropdown" id="tools-dropdown">
+      <button class="btn secondary" onclick="toggleToolsMenu()">TOOLS ▾</button>
+      <div class="export-menu" id="tools-menu">
+        <button class="export-item" onclick="randomText();closeToolsMenu()">Random Text</button>
+        <button class="export-item" onclick="openAllFonts();closeToolsMenu()">All Fonts <span class="export-hint">A</span></button>
+        <button class="export-item" onclick="openHelp();closeToolsMenu()">Help / Shortcuts <span class="export-hint">H</span></button>
+      </div>
+    </div>
 
     <div class="export-dropdown" id="export-dropdown">
       <button class="btn secondary" onclick="toggleExportMenu()">EXPORT ▾</button>
@@ -3259,11 +3264,20 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       document.getElementById('export-menu').classList.remove('open');
     }
 
+    function toggleToolsMenu() {
+      document.getElementById('tools-menu').classList.toggle('open');
+    }
+
+    function closeToolsMenu() {
+      document.getElementById('tools-menu').classList.remove('open');
+    }
+
     // Close menus on outside click
     document.addEventListener('click', e => {
       if (!document.getElementById('custom-select').contains(e.target)) closeDropdown();
       if (!document.getElementById('export-dropdown').contains(e.target)) closeExportMenu();
       if (!document.getElementById('bm-dropdown').contains(e.target)) closeBmMenu();
+      if (!document.getElementById('tools-dropdown').contains(e.target)) closeToolsMenu();
     });
 
     const COLOR_PRESETS = [
@@ -4040,7 +4054,7 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       if (!mod && !e.shiftKey && e.key.toLowerCase() === 'b' && notTyping) { toggleBmMenu(); }
       if (mod && e.key === 'ArrowLeft')                      { e.preventDefault(); navigateHistory(-1); }
       if (mod && e.key === 'ArrowRight')                     { e.preventDefault(); navigateHistory(1); }
-      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeAllFonts(); closeHelp(); exitFocus(); }
+      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeToolsMenu(); closeAllFonts(); closeHelp(); exitFocus(); }
     });
 
     document.getElementById('font-select').addEventListener('change', () => { if (!restoringHistory) generate(); });
