@@ -1928,10 +1928,15 @@ figlet.parseFont("Standard", "flf2a$ 6 5 16 15 13 0 24463 229\nStandard by Glenn
       document.getElementById('font-size-display').textContent = val + 'px';
     }
 
-    // Generate on Enter
-    document.getElementById('text-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') generate();
-    });
+    // Live-as-you-type (debounced 300ms)
+    let debounceTimer;
+    function debouncedGenerate() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(generate, 300);
+    }
+
+    document.getElementById('text-input').addEventListener('input', debouncedGenerate);
+    document.getElementById('font-select').addEventListener('change', generate);
 
     // Auto-generate on load
     window.addEventListener('load', generate);
