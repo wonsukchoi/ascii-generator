@@ -39,7 +39,7 @@
       max-width: 900px;
     }
 
-    input[type="text"] {
+    textarea#text-input {
       flex: 1;
       min-width: 200px;
       background: #111;
@@ -50,13 +50,16 @@
       font-size: 1rem;
       outline: none;
       transition: border-color 0.2s;
+      resize: vertical;
+      min-height: 46px;
+      line-height: 1.4;
     }
 
-    input[type="text"]::placeholder {
+    textarea#text-input::placeholder {
       color: #c9a96e44;
     }
 
-    input[type="text"]:focus {
+    textarea#text-input:focus {
       border-color: #c9a96e;
     }
 
@@ -265,7 +268,7 @@
   <h1>ASCII Art Generator</h1>
 
   <div class="controls">
-    <input type="text" id="text-input" placeholder="Type your text..." value="HELLO" maxlength="30" />
+    <textarea id="text-input" placeholder="Type your text...&#10;Each line renders separately" rows="2">HELLO</textarea>
     <select id="font-select">
       <option value="Banner3-D">Banner3-D (Block)</option>
       <option value="Banner3">Banner3</option>
@@ -1824,8 +1827,17 @@ figlet.parseFont("Standard", "flf2a$ 6 5 16 15 13 0 24463 229\nStandard by Glenn
 
     let currentArt = '';
 
-    function generate() {
-      const text = document.getElementById('text-input').value.trim() || 'HELLO';
+    function figletAsync(text, font) {
+      return new Promise((resolve, reject) => {
+        figlet.text(text, { font }, (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+    }
+
+    async function generate() {
+      const raw  = document.getElementById('text-input').value || 'HELLO';
       const font = document.getElementById('font-select').value;
       const output = document.getElementById('ascii-output');
       const status = document.getElementById('status');
@@ -1833,16 +1845,19 @@ figlet.parseFont("Standard", "flf2a$ 6 5 16 15 13 0 24463 229\nStandard by Glenn
       output.textContent = '...';
       status.textContent = `Loading font: ${font}`;
 
-      figlet.text(text, { font }, (err, result) => {
-        if (err) {
-          output.textContent = `Error: ${err.message}`;
-          status.textContent = '';
-          return;
-        }
-        currentArt = result;
-        output.textContent = result;
-        status.textContent = `Font: ${font} · ${result.split('\n').length} lines`;
-      });
+      const inputLines = raw.split('\n');
+
+      try {
+        const rendered = await Promise.all(
+          inputLines.map(line => line.trim() ? figletAsync(line, font) : Promise.resolve(''))
+        );
+        currentArt = rendered.join('\n');
+        output.textContent = currentArt;
+        status.textContent = `Font: ${font} · ${inputLines.length} line${inputLines.length > 1 ? 's' : ''}`;
+      } catch (err) {
+        output.textContent = `Error: ${err.message}`;
+        status.textContent = '';
+      }
     }
 
     function flash(msg) {
