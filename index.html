@@ -326,6 +326,8 @@
     <button class="btn secondary" onclick="copyPng()">COPY PNG</button>
     <button class="btn secondary" onclick="savePng()">SAVE PNG</button>
     <button class="btn secondary" onclick="saveTxt()">SAVE TXT</button>
+    <button class="btn secondary" onclick="copySvg()">COPY SVG</button>
+    <button class="btn secondary" onclick="saveSvg()">SAVE SVG</button>
   </div>
 
   <div class="font-size-row">
@@ -2017,6 +2019,60 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       link.click();
       URL.revokeObjectURL(link.href);
       flash('SAVED TXT!');
+    }
+
+    function buildSvg() {
+      if (!currentArt) return null;
+      const fontSize   = parseInt(document.getElementById('font-size-slider').value, 10);
+      const lineHeight = Math.ceil(fontSize * 1.15);
+      const pad        = parseInt(document.getElementById('png-padding-slider').value, 10);
+      const transparent = document.getElementById('png-transparent').checked;
+      const bgColor    = document.getElementById('png-bg').value;
+      const textColor  = document.getElementById('png-text').value;
+      const lines      = currentArt.split('\n');
+
+      // Measure width via canvas
+      const measure = document.createElement('canvas').getContext('2d');
+      measure.font = `${fontSize}px "Courier New", Courier, monospace`;
+      const maxWidth = lines.reduce((m, l) => Math.max(m, measure.measureText(l).width), 0);
+
+      const w = Math.ceil(maxWidth) + pad * 2;
+      const h = lines.length * lineHeight + pad * 2;
+
+      const escapeXml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+      const bgRect = transparent ? '' :
+        `<rect width="${w}" height="${h}" fill="${bgColor}"/>`;
+
+      const textLines = lines.map((line, i) =>
+        `<text x="${pad}" y="${pad + i * lineHeight + fontSize}">${escapeXml(line)}</text>`
+      ).join('\n  ');
+
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  ${bgRect}
+  <g font-family="'Courier New', Courier, monospace" font-size="${fontSize}" fill="${textColor}" xml:space="preserve">
+  ${textLines}
+  </g>
+</svg>`;
+    }
+
+    function copySvg() {
+      const svg = buildSvg();
+      if (!svg) return;
+      navigator.clipboard.writeText(svg).then(() => flash('COPIED SVG!'));
+    }
+
+    function saveSvg() {
+      const svg = buildSvg();
+      if (!svg) return;
+      const name = document.getElementById('text-input').value.trim() || 'ascii';
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const link = document.createElement('a');
+      link.download = `${name.toLowerCase().replace(/\s+/g, '-')}-ascii.svg`;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+      flash('SAVED SVG!');
     }
 
     function savePng() {
