@@ -999,6 +999,7 @@
     <input type="range" id="zoom-slider" min="0.5" max="4" value="1" step="0.5" oninput="updateZoom(this.value)">
     <span id="zoom-display">1×</span>
     <button class="scale-btn" onclick="autoFitZoom()" title="Auto-fit zoom to viewport width" style="margin-left:4px;">FIT</button>
+    <button class="scale-btn" id="ln-btn" onclick="toggleLineNumbers()" title="Toggle line numbers in preview" style="margin-left:12px;">123</button>
     <label style="margin-left:20px;">PNG PADDING</label>
     <input type="range" id="png-padding-slider" min="0" max="120" value="32" oninput="document.getElementById('png-padding-display').textContent = this.value + 'px'">
     <span id="png-padding-display">32px</span>
@@ -1247,7 +1248,11 @@
     <span><kbd>R</kbd> random font</span>
     <span><kbd>F</kbd> focus mode</span>
     <span><kbd>P</kbd> play/stop</span>
+    <span><kbd>H</kbd> help</span>
+    <span><kbd>A</kbd> all fonts</span>
+    <span><kbd>B</kbd> bookmarks</span>
     <span><kbd>⌘</kbd><kbd>←</kbd><kbd>→</kbd> history</span>
+    <span><kbd>⌃</kbd><kbd>scroll</kbd> zoom</span>
     <span>dbl-click output → copy text</span>
   </div>
 
@@ -2870,7 +2875,7 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
           inputLines.map(line => line.trim() ? figletAsync(line, font, currentLayout) : Promise.resolve(''))
         );
         currentArt = applyEcho(applyFill(applyFlip(applyBorder(alignArt(rendered.join('\n'.repeat(blockGap + 1)), currentAlign), borderStyle))));
-        output.textContent = currentArt;
+        refreshDisplay();
         const artLines = currentArt.split('\n');
         const lineCount = artLines.length;
         const maxChars  = Math.max(...artLines.map(l => l.length));
@@ -2917,8 +2922,7 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       if (animTimer) { clearInterval(animTimer); animTimer = null; }
       const btn = document.getElementById('anim-btn');
       if (btn) btn.textContent = '▶ PLAY';
-      const output = document.getElementById('ascii-output');
-      if (currentArt) output.textContent = currentArt;
+      if (currentArt) refreshDisplay();
     }
 
     function toggleAnimation() {
@@ -3790,6 +3794,37 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       applyPreviewSize();
     }
 
+    // Ctrl/Cmd + scroll to zoom
+    document.getElementById('output-wrapper').addEventListener('wheel', e => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const slider = document.getElementById('zoom-slider');
+      const newVal = Math.max(0.5, Math.min(4, parseFloat(slider.value) + (e.deltaY < 0 ? 0.5 : -0.5)));
+      slider.value = newVal;
+      updateZoom(newVal);
+    }, { passive: false });
+
+    let showLineNumbers = false;
+
+    function refreshDisplay() {
+      const output = document.getElementById('ascii-output');
+      if (!currentArt) return;
+      if (showLineNumbers) {
+        const lines = currentArt.split('\n');
+        const padLen = String(lines.length).length;
+        const numbered = lines.map((l, i) => String(i + 1).padStart(padLen, '0') + ' │ ' + l).join('\n');
+        output.textContent = numbered;
+      } else {
+        output.textContent = currentArt;
+      }
+    }
+
+    function toggleLineNumbers() {
+      showLineNumbers = !showLineNumbers;
+      document.getElementById('ln-btn').classList.toggle('active', showLineNumbers);
+      refreshDisplay();
+    }
+
     function autoFitZoom() {
       if (!currentArt) return;
       const artLines = currentArt.split('\n');
@@ -3996,9 +4031,13 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       if (mod && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); copyPng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); savePng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'l') { e.preventDefault(); copyLink(); }
-      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'r' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { randomFont(); }
-      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'f' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { toggleFocus(); }
-      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'p' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { toggleAnimation(); }
+      const notTyping = document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA';
+      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'r' && notTyping) { randomFont(); }
+      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'f' && notTyping) { toggleFocus(); }
+      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'p' && notTyping) { toggleAnimation(); }
+      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'h' && notTyping) { openHelp(); }
+      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'a' && notTyping) { openAllFonts(); }
+      if (!mod && !e.shiftKey && e.key.toLowerCase() === 'b' && notTyping) { toggleBmMenu(); }
       if (mod && e.key === 'ArrowLeft')                      { e.preventDefault(); navigateHistory(-1); }
       if (mod && e.key === 'ArrowRight')                     { e.preventDefault(); navigateHistory(1); }
       if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); closeBmMenu(); closeAllFonts(); closeHelp(); exitFocus(); }
