@@ -1073,6 +1073,15 @@
         <button class="scale-btn"        data-flip="hv" onclick="setFlipMode('hv')" title="Mirror both axes">⤡ HV</button>
       </div>
     </div>
+    <div class="color-field">
+      <label>ECHO</label>
+      <div id="echo-btns" style="display:flex;gap:4px;">
+        <button class="scale-btn active" data-echo="none" onclick="setEchoMode('none')" title="No echo">NONE</button>
+        <button class="scale-btn"        data-echo="h"    onclick="setEchoMode('h')"    title="Mirror-duplicate horizontally">↔</button>
+        <button class="scale-btn"        data-echo="v"    onclick="setEchoMode('v')"    title="Mirror-duplicate vertically">↕</button>
+        <button class="scale-btn"        data-echo="hv"   onclick="setEchoMode('hv')"   title="Mirror-duplicate both">⊞</button>
+      </div>
+    </div>
   </div>
 
   <div class="export-options">
@@ -1125,6 +1134,10 @@
         <input type="checkbox" id="png-scanlines" onchange="toggleScanlines(this.checked)">
         <span>scanlines</span>
       </label>
+      <label class="transparent-label" title="Add dark vignette edges to PNG">
+        <input type="checkbox" id="png-vignette" onchange="toggleVignette(this.checked)">
+        <span>vignette</span>
+      </label>
     </div>
   </div>
 
@@ -1154,6 +1167,15 @@
       <label>STROKE WIDTH</label>
       <input type="range" id="outline-width" min="1" max="8" value="2" oninput="document.getElementById('outline-width-display').textContent=this.value+'px'">
       <span id="outline-width-display">2px</span>
+    </div>
+  </div>
+
+  <div class="export-options" id="vignette-row" style="display:none">
+    <div class="color-field">
+      <label>VIGNETTE STRENGTH</label>
+      <input type="range" id="vignette-strength" min="0.1" max="0.95" value="0.6" step="0.05"
+             oninput="document.getElementById('vignette-strength-display').textContent=Math.round(this.value*100)+'%'">
+      <span id="vignette-strength-display">60%</span>
     </div>
   </div>
 
@@ -2818,7 +2840,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         const rendered = await Promise.all(
           inputLines.map(line => line.trim() ? figletAsync(line, font, currentLayout) : Promise.resolve(''))
         );
-        currentArt = applyFill(applyFlip(applyBorder(alignArt(rendered.join('\n'.repeat(blockGap + 1)), currentAlign), borderStyle)));
+        currentArt = applyEcho(applyFill(applyFlip(applyBorder(alignArt(rendered.join('\n'.repeat(blockGap + 1)), currentAlign), borderStyle))));
         output.textContent = currentArt;
         const artLines = currentArt.split('\n');
         const lineCount = artLines.length;
@@ -2950,8 +2972,28 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       savePrefs();
     }
 
+    function updatePreviewGradient() {
+      const enabled = document.getElementById('png-gradient').checked;
+      const output  = document.getElementById('ascii-output');
+      if (enabled) {
+        const from = document.getElementById('grad-from').value;
+        const to   = document.getElementById('grad-to').value;
+        const dir  = gradDir === 'h' ? 'to right' : 'to bottom';
+        output.style.backgroundImage = `linear-gradient(${dir}, ${from}, ${to})`;
+        output.style.backgroundClip = 'text';
+        output.style.webkitBackgroundClip = 'text';
+        output.style.color = 'transparent';
+      } else {
+        output.style.backgroundImage = '';
+        output.style.backgroundClip = '';
+        output.style.webkitBackgroundClip = '';
+        output.style.color = document.getElementById('preview-text').value;
+      }
+    }
+
     function toggleGradient(checked) {
       document.getElementById('gradient-row').style.display = checked ? 'flex' : 'none';
+      updatePreviewGradient();
     }
 
     function updatePreviewShadow() {
@@ -2980,11 +3022,17 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       document.getElementById('scanline-row').style.display = checked ? 'flex' : 'none';
     }
 
+    function toggleVignette(checked) {
+      document.getElementById('vignette-row').style.display = checked ? 'flex' : 'none';
+    }
+
     function setGradDir(dir) {
       gradDir = dir;
       document.querySelectorAll('#grad-h-btn, #grad-v-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.graddir === dir)
       );
+      updatePreviewGradient();
+      savePrefs();
     }
 
     function printArt() {
@@ -3464,6 +3512,19 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       ctx.shadowBlur = 0;
       ctx.shadowOffsetX = ctx.shadowOffsetY = 0;
 
+      // Vignette overlay
+      if (document.getElementById('png-vignette').checked) {
+        const strength = parseFloat(document.getElementById('vignette-strength').value);
+        const vGrad = ctx.createRadialGradient(
+          canvas.width / 2, canvas.height / 2, 0,
+          canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.65
+        );
+        vGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        vGrad.addColorStop(1, `rgba(0,0,0,${strength})`);
+        ctx.fillStyle = vGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
       // CRT scanlines overlay
       if (document.getElementById('png-scanlines').checked) {
         const spacing = Math.max(2, Math.round(3 * scale));
@@ -3695,6 +3756,29 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       savePrefs();
     }
 
+    let echoMode = 'none'; // 'none', 'h', 'v', 'hv'
+
+    function applyEcho(art) {
+      if (echoMode === 'none') return art;
+      let lines = art.split('\n');
+      if (echoMode === 'h' || echoMode === 'hv') {
+        lines = lines.map(l => l + l.split('').reverse().join(''));
+      }
+      if (echoMode === 'v' || echoMode === 'hv') {
+        lines = [...lines, ...[...lines].reverse()];
+      }
+      return lines.join('\n');
+    }
+
+    function setEchoMode(mode) {
+      echoMode = mode;
+      document.querySelectorAll('#echo-btns .scale-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.echo === mode)
+      );
+      generate();
+      savePrefs();
+    }
+
     let flipMode = ''; // '', 'h', 'v', 'hv'
 
     function applyFlip(art) {
@@ -3778,6 +3862,11 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
     // Live preview shadow when shadow inputs change
     ['shadow-color','shadow-blur','shadow-offset'].forEach(id =>
       document.getElementById(id).addEventListener('input', updatePreviewShadow)
+    );
+
+    // Live preview gradient when gradient inputs change
+    ['grad-from','grad-to'].forEach(id =>
+      document.getElementById(id).addEventListener('input', updatePreviewGradient)
     );
 
     // Keyboard shortcuts
@@ -4009,6 +4098,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         light:      document.body.classList.contains('light'),
         font:       document.getElementById('font-select').value,
         flip:       flipMode,
+        echo:       echoMode,
         lineHeight: document.getElementById('line-height-slider').value,
         letterSpacing,
         wrapWidth,
@@ -4047,6 +4137,7 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         if (p.light != null){ if (p.light) { document.body.classList.add('light'); document.getElementById('theme-toggle').textContent = 'DARK'; } }
         if (p.font && FONT_LIST.includes(p.font)) { document.getElementById('font-select').value = p.font; document.getElementById('select-btn').textContent = p.font; document.querySelectorAll('.dropdown-item').forEach(el => el.classList.toggle('selected', el.dataset.font === p.font)); }
         if (p.flip != null) setFlipMode(p.flip);
+        if (p.echo != null) setEchoMode(p.echo);
         if (p.lineHeight) { document.getElementById('line-height-slider').value = p.lineHeight; updateLineHeight(p.lineHeight); }
         if (p.letterSpacing != null) { setLetterSpacing(p.letterSpacing); }
         if (p.wrapWidth != null) { document.getElementById('wrap-width-slider').value = p.wrapWidth; updateWrapWidth(p.wrapWidth); }
