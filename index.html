@@ -996,6 +996,7 @@
     <label style="margin-left:20px;">ZOOM</label>
     <input type="range" id="zoom-slider" min="0.5" max="4" value="1" step="0.5" oninput="updateZoom(this.value)">
     <span id="zoom-display">1×</span>
+    <button class="scale-btn" onclick="autoFitZoom()" title="Auto-fit zoom to viewport width" style="margin-left:4px;">FIT</button>
     <label style="margin-left:20px;">PNG PADDING</label>
     <input type="range" id="png-padding-slider" min="0" max="120" value="32" oninput="document.getElementById('png-padding-display').textContent = this.value + 'px'">
     <span id="png-padding-display">32px</span>
@@ -3775,6 +3776,22 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       applyPreviewSize();
     }
 
+    function autoFitZoom() {
+      if (!currentArt) return;
+      const artLines = currentArt.split('\n');
+      const maxLen = Math.max(...artLines.map(l => l.length));
+      if (!maxLen) return;
+      const containerW = document.getElementById('output-wrapper').clientWidth - 64;
+      const fontSize   = parseInt(document.getElementById('font-size-slider').value, 10);
+      const artWidth   = maxLen * fontSize * 0.603;
+      const rawZoom    = containerW / artWidth;
+      // Snap to nearest 0.5 step within [0.5, 4]
+      const snapped = Math.max(0.5, Math.min(4, Math.round(rawZoom * 2) / 2));
+      document.getElementById('zoom-slider').value = snapped;
+      updateZoom(snapped);
+      flash('ZOOMED TO FIT!');
+    }
+
     let borderStyle = 'none';
 
     function applyBorder(art, style) {
@@ -3899,7 +3916,35 @@ figlet.parseFont("Swamp Land", "flf2a$ 8 7 17 0 11 0 24447 0\r\nAuthor : bpg\nDa
       debounceTimer = setTimeout(generate, 300);
     }
 
-    document.getElementById('text-input').addEventListener('input', () => { if (!restoringHistory) debouncedGenerate(); });
+    // Textarea auto-resize + debounced generate
+    const _ta = document.getElementById('text-input');
+    _ta.addEventListener('input', () => {
+      _ta.style.height = 'auto';
+      _ta.style.height = Math.min(_ta.scrollHeight, 300) + 'px';
+      if (!restoringHistory) debouncedGenerate();
+    });
+
+    // Drag-and-drop text file onto textarea
+    _ta.addEventListener('dragover', e => { e.preventDefault(); _ta.style.borderColor = '#c9a96e'; });
+    _ta.addEventListener('dragleave', () => { _ta.style.borderColor = ''; });
+    _ta.addEventListener('drop', e => {
+      e.preventDefault();
+      _ta.style.borderColor = '';
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      if (!/text/.test(file.type) && !file.name.match(/\.(txt|md|csv)$/i)) {
+        flash('DROP TEXT FILES'); return;
+      }
+      const reader = new FileReader();
+      reader.onload = ev => {
+        _ta.value = ev.target.result.slice(0, 2000).trim();
+        _ta.style.height = 'auto';
+        _ta.style.height = Math.min(_ta.scrollHeight, 300) + 'px';
+        generate();
+        flash('FILE LOADED!');
+      };
+      reader.readAsText(file);
+    });
 
     // Tab key inserts 2 spaces instead of focusing next element
     document.getElementById('text-input').addEventListener('keydown', e => {
