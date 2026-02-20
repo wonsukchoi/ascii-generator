@@ -274,6 +274,108 @@
       opacity: 1;
     }
 
+    /* Custom font dropdown */
+    .custom-select {
+      position: relative;
+    }
+
+    .select-btn {
+      background-color: #111;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpolyline points='0,0 5,6 10,0' fill='none' stroke='%23c9a96e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      border: 1px solid #c9a96e55;
+      color: #c9a96e;
+      padding: 11px 36px 11px 14px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      outline: none;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+      min-width: 160px;
+    }
+
+    .select-btn:focus { border-color: #c9a96e; }
+
+    .dropdown-list {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 100%;
+      background: #111;
+      border: 1px solid #c9a96e55;
+      z-index: 50;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .dropdown-list.open { display: block; }
+
+    .dropdown-item {
+      padding: 8px 14px;
+      cursor: pointer;
+      color: #c9a96e;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item.selected { background: #c9a96e22; }
+
+    .font-preview-panel {
+      display: none;
+      position: absolute;
+      left: calc(100% + 8px);
+      top: 0;
+      background: #111;
+      border: 1px solid #c9a96e55;
+      padding: 14px 16px;
+      z-index: 51;
+      min-width: 220px;
+      max-width: 340px;
+      pointer-events: none;
+    }
+
+    .font-preview-panel.visible { display: block; }
+
+    .font-preview-panel .preview-label {
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      opacity: 0.5;
+      margin-bottom: 8px;
+    }
+
+    #font-preview-art {
+      font-size: 5px;
+      line-height: 1.15;
+      color: #c9a96e;
+      white-space: pre;
+      overflow: hidden;
+    }
+
+    /* Light mode — custom dropdown */
+    body.light .select-btn {
+      background-color: #fff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpolyline points='0,0 5,6 10,0' fill='none' stroke='%237a5c1e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      border-color: #7a5c1e55;
+      color: #7a5c1e;
+    }
+    body.light .select-btn:focus { border-color: #7a5c1e; }
+    body.light .dropdown-list { background: #fff; border-color: #7a5c1e55; }
+    body.light .dropdown-item { color: #7a5c1e; }
+    body.light .dropdown-item:hover,
+    body.light .dropdown-item.selected { background: #7a5c1e22; }
+    body.light .font-preview-panel { background: #fff; border-color: #7a5c1e55; }
+    body.light #font-preview-art { color: #7a5c1e; }
+
+    /* Scrollbar inside dropdown */
+    .dropdown-list::-webkit-scrollbar { width: 4px; }
+    .dropdown-list::-webkit-scrollbar-track { background: #111; }
+    .dropdown-list::-webkit-scrollbar-thumb { background: #c9a96e44; }
+
     /* Theme toggle button */
     #theme-toggle {
       position: fixed;
@@ -365,35 +467,17 @@
 
   <div class="controls">
     <textarea id="text-input" placeholder="Type your text...&#10;Each line renders separately" rows="2">HELLO</textarea>
-    <select id="font-select">
-      <option value="Banner3-D">Banner3-D (Block)</option>
-      <option value="Banner3">Banner3</option>
-      <option value="Block">Block</option>
-      <option value="ANSI Shadow">ANSI Shadow</option>
-      <option value="Big">Big</option>
-      <option value="Doom">Doom</option>
-      <option value="Epic">Epic</option>
-      <option value="Larry 3D">Larry 3D</option>
-      <option value="Rectangles">Rectangles</option>
-      <option value="Slant">Slant</option>
-      <option value="Standard">Standard</option>
-      <option value="3D-ASCII">3D-ASCII</option>
-      <option value="Bloody">Bloody</option>
-      <option value="Calvin S">Calvin S</option>
-      <option value="Chunky">Chunky</option>
-      <option value="Colossal">Colossal</option>
-      <option value="Cyberlarge">Cyberlarge</option>
-      <option value="Gothic">Gothic</option>
-      <option value="Graffiti">Graffiti</option>
-      <option value="Isometric1">Isometric1</option>
-      <option value="Ogre">Ogre</option>
-      <option value="Puffy">Puffy</option>
-      <option value="Roman">Roman</option>
-      <option value="Shadow">Shadow</option>
-      <option value="Speed">Speed</option>
-      <option value="Star Wars">Star Wars</option>
-      <option value="Varsity">Varsity</option>
-    </select>
+    <!-- hidden select keeps existing JS working unchanged -->
+    <select id="font-select" style="display:none"></select>
+
+    <div class="custom-select" id="custom-select">
+      <button class="select-btn" id="select-btn" onclick="toggleDropdown()">Banner3-D</button>
+      <div class="dropdown-list" id="dropdown-list"></div>
+      <div class="font-preview-panel" id="font-preview-panel">
+        <div class="preview-label">PREVIEW</div>
+        <pre id="font-preview-art">...</pre>
+      </div>
+    </div>
     <button class="btn" onclick="generate()">GENERATE</button>
     <button class="btn secondary" onclick="copyLink()">COPY LINK</button>
     <button class="btn secondary" onclick="copyArt()">COPY TEXT</button>
@@ -2032,6 +2116,82 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
     function toggleTransparent(checked) {
       document.getElementById('png-bg').classList.toggle('disabled', checked);
     }
+
+    const FONT_LIST = [
+      'Banner3-D','Banner3','Block','ANSI Shadow','Big','Doom','Epic',
+      'Larry 3D','Rectangles','Slant','Standard','3D-ASCII','Bloody',
+      'Calvin S','Chunky','Colossal','Cyberlarge','Gothic','Graffiti',
+      'Isometric1','Ogre','Puffy','Roman','Shadow','Speed','Star Wars','Varsity'
+    ];
+
+    // Populate hidden select and build custom dropdown items
+    (function buildDropdown() {
+      const hiddenSelect = document.getElementById('font-select');
+      const list = document.getElementById('dropdown-list');
+
+      FONT_LIST.forEach((font, i) => {
+        // hidden option
+        const opt = document.createElement('option');
+        opt.value = font;
+        opt.textContent = font;
+        if (i === 0) opt.selected = true;
+        hiddenSelect.appendChild(opt);
+
+        // visible item
+        const item = document.createElement('div');
+        item.className = 'dropdown-item' + (i === 0 ? ' selected' : '');
+        item.dataset.font = font;
+        item.textContent = font;
+        item.addEventListener('mouseenter', () => showFontPreview(font));
+        item.addEventListener('mouseleave', hideFontPreview);
+        item.addEventListener('click', () => selectFont(font));
+        list.appendChild(item);
+      });
+    })();
+
+    const previewCache = {};
+
+    async function showFontPreview(font) {
+      const panel = document.getElementById('font-preview-panel');
+      const art   = document.getElementById('font-preview-art');
+      panel.classList.add('visible');
+      if (previewCache[font]) { art.textContent = previewCache[font]; return; }
+      art.textContent = '...';
+      try {
+        const result = await figletAsync('Hi', font);
+        previewCache[font] = result;
+        art.textContent = result;
+      } catch(e) { art.textContent = 'n/a'; }
+    }
+
+    function hideFontPreview() {
+      document.getElementById('font-preview-panel').classList.remove('visible');
+    }
+
+    function selectFont(font) {
+      const hiddenSelect = document.getElementById('font-select');
+      hiddenSelect.value = font;
+      hiddenSelect.dispatchEvent(new Event('change'));
+      document.getElementById('select-btn').textContent = font;
+      document.querySelectorAll('.dropdown-item').forEach(el =>
+        el.classList.toggle('selected', el.dataset.font === font)
+      );
+      closeDropdown();
+    }
+
+    function toggleDropdown() {
+      document.getElementById('dropdown-list').classList.toggle('open');
+    }
+
+    function closeDropdown() {
+      document.getElementById('dropdown-list').classList.remove('open');
+      hideFontPreview();
+    }
+
+    // Close on outside click
+    document.addEventListener('click', e => {
+      if (!document.getElementById('custom-select').contains(e.target)) closeDropdown();
+    });
 
     function toggleTheme() {
       const light = document.body.classList.toggle('light');
