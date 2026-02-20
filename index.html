@@ -403,6 +403,31 @@
 
     body.light #shortcuts { opacity: 0.4; }
 
+    /* Color presets */
+    #preset-swatches {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preset-swatch {
+      width: 32px;
+      height: 32px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      font-weight: bold;
+      transition: transform 0.1s, border-color 0.1s;
+      flex-shrink: 0;
+    }
+
+    .preset-swatch:hover { transform: scale(1.15); }
+    .preset-swatch.active { border-color: white; outline: 1px solid rgba(255,255,255,0.5); }
+
     /* Export dropdown */
     .export-dropdown {
       position: relative;
@@ -621,6 +646,13 @@
         <button class="scale-btn"        data-layout="fitted"              title="Fitted — characters touch"  onclick="setLayout('fitted')">FIT</button>
         <button class="scale-btn"        data-layout="universal smushing"  title="Smush — maximum overlap"   onclick="setLayout('universal smushing')">SMUSH</button>
       </div>
+    </div>
+  </div>
+
+  <div class="export-options">
+    <div class="color-field">
+      <label>PRESETS</label>
+      <div id="preset-swatches"></div>
     </div>
   </div>
 
@@ -2326,6 +2358,53 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       if (!document.getElementById('custom-select').contains(e.target)) closeDropdown();
       if (!document.getElementById('export-dropdown').contains(e.target)) closeExportMenu();
     });
+
+    const COLOR_PRESETS = [
+      { name: 'Gold',   bg: '#111111', text: '#c9a96e' },
+      { name: 'Matrix', bg: '#0d1117', text: '#00ff41' },
+      { name: 'Cyber',  bg: '#0d0d0d', text: '#ff2d78' },
+      { name: 'Neon',   bg: '#050510', text: '#00d4ff' },
+      { name: 'Retro',  bg: '#1a1400', text: '#ffb000' },
+      { name: 'Blood',  bg: '#0a0000', text: '#cc0000' },
+      { name: 'Paper',  bg: '#f5f0e8', text: '#1a1a1a' },
+      { name: 'Ghost',  bg: '#e8e8e8', text: '#888888' },
+    ];
+
+    let activePreset = 'Gold';
+
+    function buildPresetSwatches() {
+      const container = document.getElementById('preset-swatches');
+      COLOR_PRESETS.forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = 'preset-swatch' + (p.name === activePreset ? ' active' : '');
+        btn.title = p.name;
+        btn.dataset.preset = p.name;
+        btn.style.background = p.bg;
+        btn.style.color = p.text;
+        btn.style.borderColor = p.text + '66';
+        btn.textContent = 'A';
+        btn.addEventListener('click', () => applyPreset(p));
+        container.appendChild(btn);
+      });
+    }
+
+    function applyPreset(p) {
+      activePreset = p.name;
+      const setColor = (id, val) => {
+        const el = document.getElementById(id);
+        el.value = val;
+        el.dispatchEvent(new Event('input'));
+      };
+      setColor('preview-bg',   p.bg);
+      setColor('preview-text', p.text);
+      setColor('png-bg',       p.bg);
+      setColor('png-text',     p.text);
+      document.querySelectorAll('.preset-swatch').forEach(s =>
+        s.classList.toggle('active', s.dataset.preset === p.name)
+      );
+    }
+
+    buildPresetSwatches();
 
     function toggleTheme() {
       const light = document.body.classList.toggle('light');
