@@ -514,6 +514,15 @@
         <button class="scale-btn"        data-align="right"  onclick="setAlign('right')">R</button>
       </div>
     </div>
+    <div class="color-field">
+      <label>WIDTH</label>
+      <div id="width-btns" style="display:flex;gap:4px;">
+        <button class="scale-btn"        data-layout="full"                title="Full — maximum spacing"    onclick="setLayout('full')">FULL</button>
+        <button class="scale-btn active" data-layout="default"             title="Default — font default"    onclick="setLayout('default')">DEF</button>
+        <button class="scale-btn"        data-layout="fitted"              title="Fitted — characters touch"  onclick="setLayout('fitted')">FIT</button>
+        <button class="scale-btn"        data-layout="universal smushing"  title="Smush — maximum overlap"   onclick="setLayout('universal smushing')">SMUSH</button>
+      </div>
+    </div>
   </div>
 
   <div class="export-options">
@@ -2065,9 +2074,9 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
 
     let currentArt = '';
 
-    function figletAsync(text, font) {
+    function figletAsync(text, font, layout) {
       return new Promise((resolve, reject) => {
-        figlet.text(text, { font }, (err, result) => {
+        figlet.text(text, { font, horizontalLayout: layout }, (err, result) => {
           if (err) reject(err);
           else resolve(result);
         });
@@ -2087,7 +2096,7 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
 
       try {
         const rendered = await Promise.all(
-          inputLines.map(line => line.trim() ? figletAsync(line, font) : Promise.resolve(''))
+          inputLines.map(line => line.trim() ? figletAsync(line, font, currentLayout) : Promise.resolve(''))
         );
         currentArt = alignArt(rendered.join('\n'), currentAlign);
         output.textContent = currentArt;
@@ -2204,6 +2213,16 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
     function toggleTheme() {
       const light = document.body.classList.toggle('light');
       document.getElementById('theme-toggle').textContent = light ? 'DARK' : 'LIGHT';
+    }
+
+    let currentLayout = 'default';
+
+    function setLayout(layout) {
+      currentLayout = layout;
+      document.querySelectorAll('#width-btns .scale-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.layout === layout)
+      );
+      generate();
     }
 
     let currentAlign = 'left';
