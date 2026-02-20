@@ -926,6 +926,14 @@
         </div>
         <div class="export-divider"></div>
         <div id="bm-list"><div class="bm-empty">no bookmarks yet</div></div>
+        <div class="export-divider"></div>
+        <div class="bm-save-row" style="padding:6px 10px;">
+          <button class="bm-save-btn" onclick="exportBookmarks()" title="Download bookmarks as JSON">⬇ export</button>
+          <label class="bm-save-btn" style="cursor:pointer;margin:0;" title="Import bookmarks from JSON">
+            ⬆ import
+            <input type="file" accept=".json" onchange="importBookmarks(this)" style="display:none">
+          </label>
+        </div>
       </div>
     </div>
   </div>
@@ -1006,6 +1014,28 @@
     <div class="color-field" style="gap:6px;">
       <button class="color-util-btn" onclick="swapColors()" title="Swap bg ↔ text colors">⇄ SWAP</button>
       <button class="color-util-btn" onclick="syncToPng()" title="Copy preview colors → PNG colors">→ PNG</button>
+      <label class="transparent-label" title="Apply gradient to PNG text">
+        <input type="checkbox" id="png-gradient" onchange="toggleGradient(this.checked)">
+        <span>gradient</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="export-options" id="gradient-row" style="display:none">
+    <div class="color-field">
+      <label>GRADIENT</label>
+      <div style="display:flex;gap:4px;">
+        <button class="scale-btn" id="grad-h-btn" data-graddir="h" onclick="setGradDir('h')" title="Horizontal">H</button>
+        <button class="scale-btn active" id="grad-v-btn" data-graddir="v" onclick="setGradDir('v')" title="Vertical">V</button>
+      </div>
+    </div>
+    <div class="color-field">
+      <label>FROM</label>
+      <input type="color" id="grad-from" value="#ff2d78">
+    </div>
+    <div class="color-field">
+      <label>TO</label>
+      <input type="color" id="grad-to" value="#00d4ff">
     </div>
   </div>
 
@@ -2639,6 +2669,19 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       flash('SYNCED!');
     }
 
+    let gradDir = 'v';
+
+    function toggleGradient(checked) {
+      document.getElementById('gradient-row').style.display = checked ? 'flex' : 'none';
+    }
+
+    function setGradDir(dir) {
+      gradDir = dir;
+      document.querySelectorAll('#grad-h-btn, #grad-v-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.graddir === dir)
+      );
+    }
+
     function printArt() {
       closeExportMenu();
       if (!currentArt) return;
@@ -2939,9 +2982,12 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
       canvas.width  = Math.ceil(maxWidth) + pad * 2;
       canvas.height = lines.length * lineHeight + pad * 2;
 
-      const transparent = document.getElementById('png-transparent').checked;
-      const bgColor     = document.getElementById('png-bg').value;
-      const textColor   = document.getElementById('png-text').value;
+      const transparent   = document.getElementById('png-transparent').checked;
+      const bgColor       = document.getElementById('png-bg').value;
+      const textColor     = document.getElementById('png-text').value;
+      const useGradient   = document.getElementById('png-gradient').checked;
+      const gradFrom      = document.getElementById('grad-from').value;
+      const gradTo        = document.getElementById('grad-to').value;
 
       const ctx = canvas.getContext('2d');
       if (!transparent) {
@@ -2949,7 +2995,16 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      ctx.fillStyle = textColor;
+      if (useGradient) {
+        const grad = gradDir === 'h'
+          ? ctx.createLinearGradient(pad, 0, canvas.width - pad, 0)
+          : ctx.createLinearGradient(0, pad, 0, canvas.height - pad);
+        grad.addColorStop(0, gradFrom);
+        grad.addColorStop(1, gradTo);
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = textColor;
+      }
       ctx.font = `${fontSize}px "Courier New", Courier, monospace`;
       ctx.textBaseline = 'top';
 
@@ -3277,6 +3332,39 @@ figlet.parseFont('Soft', "flf2a$ 7 7 15 0 19 0 24447 0\nAuthor : myflix\nDate   
 
     function closeBmMenu() {
       document.getElementById('bm-menu').classList.remove('open');
+    }
+
+    function exportBookmarks() {
+      if (!bookmarks.length) { flash('NO BOOKMARKS'); return; }
+      const blob = new Blob([JSON.stringify(bookmarks, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.download = 'ascii-bookmarks.json';
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+      flash('EXPORTED!');
+    }
+
+    function importBookmarks(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (!Array.isArray(imported)) throw new Error();
+          const existingIds = new Set(bookmarks.map(b => b.id));
+          const newOnes = imported.filter(b => b.id && b.name && !existingIds.has(b.id));
+          bookmarks = [...newOnes, ...bookmarks].slice(0, 20);
+          persistBookmarks();
+          renderBookmarkList();
+          flash(`IMPORTED ${newOnes.length}!`);
+        } catch(err) {
+          flash('IMPORT FAILED');
+        }
+        input.value = '';
+      };
+      reader.readAsText(file);
     }
 
     // Read URL hash on load and pre-populate inputs
