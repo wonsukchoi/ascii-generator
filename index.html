@@ -768,11 +768,13 @@
         <button class="export-item" onclick="copyArt()">Text</button>
         <button class="export-item" onclick="copyPng()">PNG <span class="export-hint">⌘⇧C</span></button>
         <button class="export-item" onclick="copySvg()">SVG</button>
+        <button class="export-item" onclick="copyHtml()">HTML</button>
         <div class="export-divider"></div>
         <div class="export-section-label">SAVE</div>
         <button class="export-item" onclick="savePng()">PNG <span class="export-hint">⌘⇧S</span></button>
         <button class="export-item" onclick="saveTxt()">TXT</button>
         <button class="export-item" onclick="saveSvg()">SVG</button>
+        <button class="export-item" onclick="saveHtml()">HTML</button>
       </div>
     </div>
 
@@ -800,6 +802,9 @@
     <label style="margin-left:20px;">PNG PADDING</label>
     <input type="range" id="png-padding-slider" min="0" max="120" value="32" oninput="document.getElementById('png-padding-display').textContent = this.value + 'px'">
     <span id="png-padding-display">32px</span>
+    <label style="margin-left:20px;">BLOCK GAP</label>
+    <input type="range" id="block-gap-slider" min="0" max="4" value="0" oninput="updateBlockGap(this.value)">
+    <span id="block-gap-display">0</span>
   </div>
 
   <div class="export-options" style="margin-bottom:10px;">
@@ -2423,7 +2428,7 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
         const rendered = await Promise.all(
           inputLines.map(line => line.trim() ? figletAsync(line, font, currentLayout) : Promise.resolve(''))
         );
-        currentArt = alignArt(rendered.join('\n'), currentAlign);
+        currentArt = alignArt(rendered.join('\n'.repeat(blockGap + 1)), currentAlign);
         output.textContent = currentArt;
         const artLines = currentArt.split('\n');
         const lineCount = artLines.length;
@@ -2873,6 +2878,48 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       applyPreviewSize();
     }
 
+    let blockGap = 0;
+
+    function updateBlockGap(val) {
+      blockGap = parseInt(val, 10);
+      document.getElementById('block-gap-display').textContent = val;
+      generate();
+    }
+
+    function buildHtml() {
+      if (!currentArt) return null;
+      const fontSize  = parseInt(document.getElementById('font-size-slider').value, 10);
+      const previewBg = document.getElementById('preview-bg').value;
+      const previewFg = document.getElementById('preview-text').value;
+      const escaped   = currentArt
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      return `<pre style="font-family:'Courier New',Courier,monospace;font-size:${fontSize}px;line-height:1.15;background:${previewBg};color:${previewFg};padding:32px;display:inline-block;white-space:pre;">${escaped}</pre>`;
+    }
+
+    function copyHtml() {
+      closeExportMenu();
+      const html = buildHtml();
+      if (!html) return;
+      navigator.clipboard.writeText(html).then(() => flash('COPIED HTML!'));
+    }
+
+    function saveHtml() {
+      closeExportMenu();
+      const html = buildHtml();
+      if (!html) return;
+      const name = document.getElementById('text-input').value.trim() || 'ascii';
+      const full = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;background:#1c1c1c;">${html}</body></html>`;
+      const blob = new Blob([full], { type: 'text/html' });
+      const link = document.createElement('a');
+      link.download = `${name.toLowerCase().replace(/\s+/g, '-')}-ascii.html`;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+      flash('SAVED HTML!');
+    }
+
     // Live-as-you-type (debounced 300ms)
     let debounceTimer;
     function debouncedGenerate() {
@@ -2925,6 +2972,7 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
         pngBg: document.getElementById('png-bg').value,
         pngText: document.getElementById('png-text').value,
         transparent: document.getElementById('png-transparent').checked,
+        blockGap,
       };
       bookmarks.unshift(bm);
       if (bookmarks.length > 20) bookmarks.pop();
@@ -2961,6 +3009,12 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       if (bm.transparent !== undefined) {
         document.getElementById('png-transparent').checked = bm.transparent;
         toggleTransparent(bm.transparent);
+      }
+      if (bm.blockGap !== undefined) {
+        blockGap = bm.blockGap;
+        const bgSlider = document.getElementById('block-gap-slider');
+        bgSlider.value = bm.blockGap;
+        document.getElementById('block-gap-display').textContent = bm.blockGap;
       }
       restoringHistory = false;
       generate();
