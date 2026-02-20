@@ -403,6 +403,69 @@
 
     body.light #shortcuts { opacity: 0.4; }
 
+    /* Export dropdown */
+    .export-dropdown {
+      position: relative;
+    }
+
+    .export-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: #111;
+      border: 1px solid #c9a96e55;
+      z-index: 60;
+      min-width: 140px;
+      padding: 6px 0;
+    }
+
+    .export-menu.open { display: block; }
+
+    .export-section-label {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      opacity: 0.4;
+      padding: 4px 14px 2px;
+      font-family: 'Courier New', monospace;
+      color: #c9a96e;
+    }
+
+    .export-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: #c9a96e;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      padding: 7px 14px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .export-item:hover { background: #c9a96e22; }
+
+    .export-hint {
+      font-size: 0.65rem;
+      opacity: 0.45;
+      letter-spacing: 0.5px;
+    }
+
+    .export-divider {
+      border-top: 1px solid #c9a96e22;
+      margin: 6px 0;
+    }
+
+    /* Light mode */
+    body.light .export-menu { background: #fff; border-color: #7a5c1e55; }
+    body.light .export-section-label { color: #7a5c1e; }
+    body.light .export-item { color: #7a5c1e; }
+    body.light .export-item:hover { background: #7a5c1e22; }
+    body.light .export-divider { border-color: #7a5c1e22; }
+
     /* Theme toggle button */
     #theme-toggle {
       position: fixed;
@@ -506,13 +569,22 @@
       </div>
     </div>
     <button class="btn" onclick="generate()">GENERATE</button>
-    <button class="btn secondary" onclick="copyLink()">COPY LINK</button>
-    <button class="btn secondary" onclick="copyArt()">COPY TEXT</button>
-    <button class="btn secondary" onclick="copyPng()">COPY PNG</button>
-    <button class="btn secondary" onclick="savePng()">SAVE PNG</button>
-    <button class="btn secondary" onclick="saveTxt()">SAVE TXT</button>
-    <button class="btn secondary" onclick="copySvg()">COPY SVG</button>
-    <button class="btn secondary" onclick="saveSvg()">SAVE SVG</button>
+
+    <div class="export-dropdown" id="export-dropdown">
+      <button class="btn secondary" onclick="toggleExportMenu()">EXPORT ▾</button>
+      <div class="export-menu" id="export-menu">
+        <div class="export-section-label">COPY</div>
+        <button class="export-item" onclick="copyLink()">Link <span class="export-hint">⌘⇧L</span></button>
+        <button class="export-item" onclick="copyArt()">Text</button>
+        <button class="export-item" onclick="copyPng()">PNG <span class="export-hint">⌘⇧C</span></button>
+        <button class="export-item" onclick="copySvg()">SVG</button>
+        <div class="export-divider"></div>
+        <div class="export-section-label">SAVE</div>
+        <button class="export-item" onclick="savePng()">PNG <span class="export-hint">⌘⇧S</span></button>
+        <button class="export-item" onclick="saveTxt()">TXT</button>
+        <button class="export-item" onclick="saveSvg()">SVG</button>
+      </div>
+    </div>
   </div>
 
   <div class="font-size-row">
@@ -2156,10 +2228,12 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
     }
 
     function copyLink() {
+      closeExportMenu();
       navigator.clipboard.writeText(window.location.href).then(() => flash('COPIED LINK!'));
     }
 
     function copyArt() {
+      closeExportMenu();
       if (!currentArt) return;
       navigator.clipboard.writeText(currentArt).then(() => flash('COPIED TEXT!'));
     }
@@ -2239,9 +2313,18 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       hideFontPreview();
     }
 
-    // Close on outside click
+    function toggleExportMenu() {
+      document.getElementById('export-menu').classList.toggle('open');
+    }
+
+    function closeExportMenu() {
+      document.getElementById('export-menu').classList.remove('open');
+    }
+
+    // Close menus on outside click
     document.addEventListener('click', e => {
       if (!document.getElementById('custom-select').contains(e.target)) closeDropdown();
+      if (!document.getElementById('export-dropdown').contains(e.target)) closeExportMenu();
     });
 
     function toggleTheme() {
@@ -2329,18 +2412,20 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
     }
 
     function copyPng() {
+      closeExportMenu();
       const canvas = buildCanvas();
       if (!canvas) return;
       canvas.toBlob(blob => {
         navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
           .then(() => flash('COPIED PNG!'))
-          .catch(err => {
+          .catch(() => {
             document.getElementById('status').textContent = 'Clipboard PNG not supported in this browser — use Save PNG instead.';
           });
       });
     }
 
     function saveTxt() {
+      closeExportMenu();
       if (!currentArt) return;
       const name = document.getElementById('text-input').value.trim() || 'ascii';
       const blob = new Blob([currentArt], { type: 'text/plain' });
@@ -2388,12 +2473,14 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
     }
 
     function copySvg() {
+      closeExportMenu();
       const svg = buildSvg();
       if (!svg) return;
       navigator.clipboard.writeText(svg).then(() => flash('COPIED SVG!'));
     }
 
     function saveSvg() {
+      closeExportMenu();
       const svg = buildSvg();
       if (!svg) return;
       const name = document.getElementById('text-input').value.trim() || 'ascii';
@@ -2407,6 +2494,7 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
     }
 
     function savePng() {
+      closeExportMenu();
       const canvas = buildCanvas();
       if (!canvas) return;
       const text = document.getElementById('text-input').value.trim() || 'ascii';
@@ -2438,7 +2526,7 @@ figlet.parseFont("Varsity", "flf2a$ 7 7 18 0 11 0 24447 0\nAuthor : myflix\nDate
       if (mod && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); copyPng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); savePng(); }
       if (mod && e.shiftKey && e.key.toLowerCase() === 'l') { e.preventDefault(); copyLink(); }
-      if (e.key === 'Escape')                                { closeDropdown(); }
+      if (e.key === 'Escape')                                { closeDropdown(); closeExportMenu(); }
     });
 
     document.getElementById('font-select').addEventListener('change', generate);
